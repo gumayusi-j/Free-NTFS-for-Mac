@@ -31,16 +31,16 @@
   "author": "hoochanlon",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "electron": "28.3.3",
-    "electron-builder": "^24.9.1",
+    "@types/node": "^22.0.0",
+    "electron": "44.0.0",
+    "electron-builder": "^26.0.0",
     "electron-reloader": "^1.2.3",
-    "sharp": "^0.34.5",
-    "stylus": "^0.63.0",
-    "typescript": "^5.0.0"
+    "sharp": "^0.35.0",
+    "stylus": "^0.64.0",
+    "typescript": "^5.9.0"
   },
   "dependencies": {
-    "marked": "^17.0.1",
+    "marked": "^18.0.0",
     "node-pty": "^1.1.0",
     "pnpm": "^10.27.0"
   },

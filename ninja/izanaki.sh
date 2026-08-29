@@ -193,12 +193,12 @@ fix_electron() {
 
         # 重新安装 Electron（允许构建脚本运行）
         print_info "$(t electron_reinstalling_force)"
-        pnpm install electron@28.3.3 --force --ignore-scripts=false 2>&1
+        pnpm install electron@44.0.0 --force --ignore-scripts=false 2>&1
         INSTALL_RESULT=$?
 
         if [ $INSTALL_RESULT -ne 0 ]; then
             print_warning "$(t electron_reinstalling_normal)"
-            pnpm install electron@28.3.3 --ignore-scripts=false 2>&1
+            pnpm install electron@44.0.0 --ignore-scripts=false 2>&1
             INSTALL_RESULT=$?
         fi
 

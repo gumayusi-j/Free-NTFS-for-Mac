@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/apple/Desktop/Free-NTFS-for-Mac 2>&1 | head -50)",
+      "Read(//Users/apple/Desktop/Free-NTFS-for-Mac/**)"
+    ]
+  }
+}
