@@ -31,6 +31,7 @@
   const statusDot = statusIndicator.querySelector('.status-dot') as HTMLElement;
   const depsList = document.getElementById('depsList')!;
   const checkDepsBtn = document.getElementById('checkDepsBtn') as HTMLButtonElement;
+  const autoInstallDepsBtn = document.getElementById('autoInstallDepsBtn') as HTMLButtonElement | null;
   const devicesList = document.getElementById('devicesList')!;
   // readWriteDevicesList 已整合到 devicesList 中，保留变量以兼容现有代码
   const readWriteDevicesList = devicesList;
@@ -39,7 +40,6 @@
   const unmountAllBtn = document.getElementById('unmountAllBtn') as HTMLButtonElement;
   const restoreAllReadOnlyBtn = document.getElementById('restoreAllReadOnlyBtn') as HTMLButtonElement;
   const ejectAllBtn = document.getElementById('ejectAllBtn') as HTMLButtonElement;
-  const loadingOverlay = document.getElementById('loadingOverlay') as HTMLElement;
   const logContainer = document.getElementById('logContainer')!;
   const clearLogBtn = document.getElementById('clearLogBtn') as HTMLButtonElement;
   const themeToggleButton = document.getElementById('theme-toggle-btn') as HTMLButtonElement;
@@ -47,6 +47,7 @@
   const helpTab = document.getElementById('helpTab') as HTMLElement;
   const protectBtn = document.getElementById('protectBtn') as HTMLButtonElement;
   const quitBtn = document.getElementById('quitBtn') as HTMLButtonElement;
+  const aboutTitlebarBtn = document.getElementById('aboutTitlebarBtn') as HTMLButtonElement | null;
   const caffeinateBtn = document.getElementById('caffeinateBtn') as HTMLButtonElement | null;
   const autoMountTitlebarBtn = document.getElementById('autoMountTitlebarBtn') as HTMLButtonElement | null;
   const trayModeTitlebarBtn = document.getElementById('trayModeTitlebarBtn') as HTMLButtonElement | null;
@@ -56,6 +57,14 @@
 
   // 初始化
   document.addEventListener('DOMContentLoaded', async () => {
+    aboutTitlebarBtn?.addEventListener('click', async () => {
+      try {
+        await window.electronAPI.openAboutWindow();
+      } catch (error) {
+        console.error('打开关于窗口失败:', error);
+      }
+    });
+
     // 初始化主题（在 DOM 加载前设置，避免闪烁）
     AppUtils.Theme.initializeTheme(docBody, themeToggleButton);
 
@@ -108,11 +117,13 @@
 
     AppModules.Dependencies.checkDependencies(
       depsList,
-      loadingOverlay,
       statusDot,
       statusText
     );
-    AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText);
+    const initialDevices = window.electronAPI.getCachedNTFSDevices
+      ? await window.electronAPI.getCachedNTFSDevices()
+      : await window.electronAPI.getNTFSDevices(false);
+    await AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText, initialDevices);
     startAutoRefresh();
 
     // 初始化时加载指南手册的 markdown 内容（会自动根据当前语言加载对应文件）
@@ -357,6 +368,11 @@
 
     // 初始化自动读写功能
     await updateAutoMountTitlebarButton();
+    window.electronAPI.onApplyAutoMount(() => {
+      window.electronAPI.applyAutoMount().catch((error: unknown) => {
+        console.error('应用自动读写失败:', error);
+      });
+    });
 
     // 标题栏自动读写按钮点击事件
     if (autoMountTitlebarBtn) {
@@ -371,66 +387,10 @@
           const newValue = !settings.autoMount;
           await window.electronAPI.saveSettings({ autoMount: newValue });
           await updateAutoMountTitlebarButton();
-
-          // 如果开启了自动读写功能，检查并自动挂载当前已存在的只读设备
           if (newValue) {
-            try {
-              const devices = await window.electronAPI.getNTFSDevices(true);
-              const settings = await window.electronAPI.getSettings();
-
-              const manuallyReadOnlyDevices = settings.manuallyReadOnlyDevices || [];
-              const readOnlyDevices = devices.filter((d: any) =>
-                d.isReadOnly &&
-                !d.isUnmounted &&
-                !manuallyReadOnlyDevices.includes(d.volumeUuid || d.disk) &&
-                !manuallyReadOnlyDevices.includes(d.disk)
-              );
-
-              if (readOnlyDevices.length > 0) {
-                const t = getT();
-                await AppUtils.Logs.addLog(
-                  t('devices.autoMountingExistingDevices') || `检测到 ${readOnlyDevices.length} 个只读设备，正在自动挂载为读写模式...`,
-                  'info'
-                );
-
-                for (const device of readOnlyDevices) {
-                  try {
-                    const result = await window.electronAPI.mountDevice(device);
-                    if (result.success) {
-                      await AppUtils.Logs.addLog(
-                        t('devices.autoMountSuccess') || `设备 ${device.volumeName} 自动配置成功`,
-                        'success'
-                      );
-                    } else {
-                      await AppUtils.Logs.addLog(
-                        t('devices.autoMountFailed') || `设备 ${device.volumeName} 自动配置失败: ${result.error || '未知错误'}`,
-                        'error'
-                      );
-                    }
-                  } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    await AppUtils.Logs.addLog(
-                      t('devices.autoMountFailed') || `设备 ${device.volumeName} 自动配置失败: ${errorMessage}`,
-                      'error'
-                    );
-                  }
-                }
-
-                // 重新刷新设备列表以更新状态
-                if (AppModules && AppModules.Devices && AppModules.Devices.Refresh) {
-                  const devicesList = document.getElementById('devicesList') as HTMLElement;
-                  if (devicesList) {
-                    const state = {
-                      devices: devices,
-                      lastDeviceCount: devices.length,
-                      lastDeviceState: `${devices.length}-${readOnlyDevices.length}`
-                    };
-                    await AppModules.Devices.Refresh.refreshDevices(devicesList, true, state);
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('检查并自动挂载现有设备失败:', error);
+            const result = await window.electronAPI.applyAutoMount();
+            if (!result?.success) {
+              console.error('应用自动读写失败:', result?.error);
             }
           }
         } catch (error) {
@@ -587,12 +547,17 @@
       // 手动点击时强制刷新，忽略缓存
       AppModules.Dependencies.checkDependencies(
         depsList,
-        loadingOverlay,
         statusDot,
         statusText,
         true // forceRefresh = true
       );
     });
+
+    if (autoInstallDepsBtn) {
+      autoInstallDepsBtn.addEventListener('click', () => {
+        AppModules.Dependencies.openAutoInstaller();
+      });
+    }
 
     if (refreshDevicesBtn) {
       refreshDevicesBtn.addEventListener('click', async () => {
@@ -775,19 +740,13 @@
             window.electronAPI.updateWindowVisibility(!document.hidden);
           }
 
-          // 窗口变为可见时，立即强制刷新设备列表（使用强制刷新，确保获取最新状态）
+          // 窗口重新可见后只后台确认，不在首帧前清空或重绘设备列表
           if (!document.hidden) {
-            setTimeout(async () => {
-              try {
-                // 强制刷新，确保窗口重新可见时显示最新状态
-                const latestDevices = await window.electronAPI.getNTFSDevices(true);
-                await AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText, latestDevices);
-              } catch (error) {
-                console.error('[主界面] 窗口可见性变化时刷新失败:', error);
-                // 降级：不使用强制刷新
-                await AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText);
-              }
-            }, 100);
+            window.electronAPI.getNTFSDevices(true).then((latestDevices: any[]) => {
+              return AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText, latestDevices);
+            }).catch((error: unknown) => {
+              console.error('[主界面] 窗口可见性变化时刷新失败:', error);
+            });
           }
         });
 
@@ -859,6 +818,81 @@
     poll();
   }
 
+  if (window.electronAPI && window.electronAPI.onSyncDevicesFromTray) {
+    window.electronAPI.onSyncDevicesFromTray((devices: any[]) => {
+      void applyDevicesBeforeShow(devices);
+    });
+  }
+
+  async function applyDevicesBeforeShow(devices: any[]): Promise<void> {
+    const i18n = (window as any).AppUtils?.I18n;
+    if (i18n?.init && !i18n.isReady?.()) {
+      await i18n.init();
+    }
+    AppModules.Tabs.switchToTab('devices', logContainer, helpTab);
+    await AppModules.Devices.refreshDevices(
+      devicesList,
+      readWriteDevicesList,
+      statusDot,
+      statusText,
+      Array.isArray(devices) ? devices : []
+    );
+  }
+  (window as any).applyDevicesBeforeShow = applyDevicesBeforeShow;
+
+  function runPendingDeviceAction(data: { action: string; device?: any }): void {
+    const { action, device } = data;
+    if (!action) return;
+
+    AppModules.Tabs.switchToTab('devices', logContainer, helpTab);
+    const run = () => {
+      const currentDevice = device
+        ? (AppModules.Devices.devices || []).find((item: any) => item.disk === device.disk) || device
+        : null;
+      switch (action) {
+        case 'rename':
+          if (currentDevice) AppModules.Devices.renameDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'format':
+          if (currentDevice) AppModules.Devices.formatDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'repair':
+          if (currentDevice) AppModules.Devices.repairDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'mount':
+          if (currentDevice) AppModules.Devices.mountDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'unmount':
+          if (currentDevice) AppModules.Devices.unmountDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'eject':
+          if (currentDevice) AppModules.Devices.ejectDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'restore':
+          if (currentDevice) AppModules.Devices.restoreToReadOnly(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'reset':
+          if (currentDevice) AppModules.Devices.resetDevice(currentDevice, devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'mount-all':
+          AppModules.Devices.mountAllDevices(devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'restore-all':
+          AppModules.Devices.restoreAllToReadOnly(devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'eject-all':
+          AppModules.Devices.ejectAllDevices(devicesList, readWriteDevicesList, statusDot, statusText);
+          break;
+        case 'quit':
+          if (quitBtn) quitBtn.click();
+          break;
+      }
+    };
+
+    AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText).then(run).catch(run);
+  }
+  (window as any).runPendingDeviceAction = runPendingDeviceAction;
+
   // 监听托盘操作
   if (window.electronAPI && window.electronAPI.onTrayAction) {
     window.electronAPI.onTrayAction((action: string) => {
@@ -888,31 +922,7 @@
   // 监听托盘设备操作
   if (window.electronAPI && window.electronAPI.onTrayDeviceAction) {
     window.electronAPI.onTrayDeviceAction((data: { action: string; device: any }) => {
-      const { action, device } = data;
-      // 切换到设备标签页
-      AppModules.Tabs.switchToTab('devices', logContainer, helpTab);
-      // 刷新设备列表
-      AppModules.Devices.refreshDevices(devicesList, readWriteDevicesList, statusDot, statusText).then(() => {
-        // 根据操作类型执行相应的操作
-        switch (action) {
-          case 'mount':
-            // 找到对应的设备并执行挂载操作
-            AppModules.Devices.mountDevice(device, devicesList, readWriteDevicesList, statusDot, statusText);
-            break;
-          case 'unmount':
-            AppModules.Devices.unmountDevice(device, devicesList, readWriteDevicesList, statusDot, statusText);
-            break;
-          case 'eject':
-            AppModules.Devices.ejectDevice(device, devicesList, readWriteDevicesList, statusDot, statusText);
-            break;
-          case 'restore':
-            AppModules.Devices.restoreToReadOnly(device, devicesList, readWriteDevicesList, statusDot, statusText);
-            break;
-          case 'reset':
-            AppModules.Devices.resetDevice(device, devicesList, readWriteDevicesList, statusDot, statusText);
-            break;
-        }
-      });
+      runPendingDeviceAction(data);
     });
   }
 

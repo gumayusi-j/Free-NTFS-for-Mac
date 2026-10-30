@@ -35,6 +35,13 @@ async function loadTranslations(lang: string): Promise<void> {
         quit: '退出',
         file: '文件',
         close: '关闭',
+        edit: '编辑',
+        undo: '撤销',
+        redo: '重做',
+        cut: '剪切',
+        copy: '复制',
+        paste: '粘贴',
+        selectAll: '全选',
         view: '视图',
         reload: '重新加载',
         forceReload: '强制重新加载',
@@ -71,7 +78,7 @@ function t(key: string): string | undefined {
 export function setupAboutPanel(): void {
   app.setAboutPanelOptions({
     applicationName: 'Nigate',
-    applicationVersion: 'v1.4.5',
+    applicationVersion: 'v1.5.4',
     copyright: '© 2024 Hoochanlon',
     credits: '基于 ntfs-3g 驱动制作'
   });
@@ -256,6 +263,18 @@ export async function setupApplicationMenu(): Promise<void> {
             }
           }
         }
+      ]
+    },
+    {
+      label: t('menu.edit') || '编辑',
+      submenu: [
+        { label: t('menu.undo') || '撤销', role: 'undo' },
+        { label: t('menu.redo') || '重做', role: 'redo' },
+        { type: 'separator' },
+        { label: t('menu.cut') || '剪切', role: 'cut' },
+        { label: t('menu.copy') || '复制', role: 'copy' },
+        { label: t('menu.paste') || '粘贴', role: 'paste' },
+        { label: t('menu.selectAll') || '全选', role: 'selectAll' }
       ]
     },
     {

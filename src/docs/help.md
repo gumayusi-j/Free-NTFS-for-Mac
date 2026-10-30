@@ -1,3 +1,11 @@
+## 关于本软件
+
+**Nigate** 是一款基于 ntfs-3g 的免费 macOS NTFS 存储设备读写工具。
+
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> 作者主页：[https://github.com/hoochanlon](https://github.com/hoochanlon)
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> 软件项目：[https://github.com/hoochanlon/Free-NTFS-for-Mac](https://github.com/hoochanlon/Free-NTFS-for-Mac)
+- <img src="../imgs/svg/social/email.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> 联系邮箱：[hoochanlon@outlook.com](mailto:hoochanlon@outlook.com)
+
 ## 免责声明
 
 使用本工具挂载和修改 NTFS 设备存在数据丢失的风险。建议在使用前备份重要数据。本工具按"现状"提供，不提供任何明示或暗示的担保。使用本工具造成的任何数据损失，开发者不承担责任。
@@ -43,6 +51,9 @@ xcode-select --install
 
 #### 3. 安装 MacFUSE
 
+> [!TIP]
+> Apple Silicon 默认阻止第三方内核扩展。关机后长按电源键进入启动选项 → 选项 → 继续 → 实用工具 → 启动安全性实用工具，选中系统盘，打开安全策略，选择降低安全性，并勾选“允许用户管理来自被认可开发者的内核扩展”。
+
 在终端运行以下命令：
 
 ```bash
@@ -58,6 +69,9 @@ brew tap gromgit/homebrew-fuse
 brew install ntfs-3g-mac
 ```
 
+> [!TIP]
+> macFUSE、ntfs-3g 安装完成后，在“通用”设置中，依次选择“登录项与扩展” > “扩展” > “按类别” > “文件系统扩展”。随后点击该项的信息图标，并启用 ntfs-3g（如存在）及 macFUSE 等相关选项。
+
 **注意**：安装顺序很重要，请按照 1 → 2 → 3 → 4 的顺序依次安装。
 
 ![1768637904211](image/help/1768637904211.png)## 界面图标说明
@@ -66,12 +80,16 @@ brew install ntfs-3g-mac
 
 ### 标题栏图标
 
-- <img src="../imgs/svg/devices/flash-auto.svg" alt="自动读写" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **自动读写图标** - 启用后，新插入的 NTFS 设备会自动挂载为读写模式。图标激活时显示为蓝色。
+- <img src="../imgs/svg/devices/flash-auto.svg" alt="自动读写" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **自动读写图标** - 启用后，后台会把新插入的只读 NTFS 设备挂载为读写，不依赖窗口是否打开。手动还原为只读的设备在本次连接期间不会被改回。图标激活时显示为蓝色。
 - <img src="../imgs/svg/devices/tray.svg" alt="托盘模式" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **托盘模式图标** - 启用后，关闭窗口时应用会最小化到系统托盘而不是退出。图标激活时显示为红色。
 - <img src="../imgs/svg/system/caffe.svg" alt="防止休眠" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **防止休眠图标** - 启用后，系统将禁止进入休眠状态，确保设备持续可用。图标激活时显示为咖啡色。
 - <img src="../imgs/svg/system/protect.svg" alt="状态保护" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **状态保护图标** - 长按3s可切换保护状态。保护后，自动读写、托盘模式和防止休眠功能将被禁用，防止误操作。图标保护后显示为绿色并带有脉冲动画。
 - <img src="../imgs/svg/ui/info.svg" alt="关于" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **关于图标** - 打开关于窗口，查看应用信息和项目链接。
 - <img src="../imgs/svg/actions/exit.svg" alt="退出" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **退出图标** - 退出应用程序。
+
+### 设置页图标
+
+- 🤫 **彩蛋图标** - 位于“应用设置”标题旁，长按 3 秒可切换全局图标按钮悬停提示的显示状态；选择会被保存。
 
 ### 标签页图标
 
@@ -80,6 +98,13 @@ brew install ntfs-3g-mac
 ### 设备管理图标
 
 - <img src="../imgs/svg/actions/refresh.svg" alt="刷新" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **刷新图标** - 刷新设备列表，重新检测已连接的 NTFS 设备。
+- <img src="../imgs/svg/actions/format.svg" alt="格式化" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **格式化图标** - 将整块外接磁盘重建为 GPT NTFS。操作会抹掉该磁盘上的全部分区和数据，不可恢复，请先备份。仅已挂载的外接盘显示此图标。
+- <img src="../imgs/svg/actions/repair.svg" alt="修复" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **修复图标** - 点击对应设备的修复图标并确认，即可尝试修复该设备的 NTFS 文件系统。操作需要管理员权限并输入密码，可自动处理 Resource busy 错误。
+
+> [!tip]
+> <img src="../imgs/svg/actions/check-okey-done.svg" alt="完成" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **完成图标** - 格式化或修复成功后，对应的格式化/修复图标会短暂换成此完成标记，约 3 秒后恢复。
+
+**注意：ntfsfix 修复能力有限，无法替代 Windows 的 `chkdsk /f`。**
 
 ## 使用步骤
 
@@ -120,40 +145,30 @@ brew install ntfs-3g-mac
 
 ### 自动读写功能
 
-自动读写功能可以让您无需手动操作，自动将新插入的 NTFS 设备挂载为读写模式。
+自动读写由应用后台直接执行，不依赖主窗口或托盘窗口是否打开。启用后，后台会在检测到设备变化时，把符合条件的只读 NTFS 设备挂载为读写模式。
 
 **启用方式：**
 
 - 在标题栏点击自动读写图标（<img src="../imgs/svg/devices/flash-auto.svg" alt="自动读写" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;">），图标变为蓝色表示已启用
 - 在托盘菜单中勾选"自动读写"选项
-- 在主界面标题栏的自动读写按钮中切换
 
-**功能特点：**
+**什么时候会自动挂载：**
 
-- **自动检测新设备**：当您插入新的 NTFS 设备时，应用会自动检测并挂载为读写模式
-- **智能跳过手动只读设备**：如果您手动将某个设备设置为只读，自动读写功能会尊重您的选择，不会再次将其挂载为读写模式
-- **开启时自动处理现有设备**：当您启用自动读写功能时，应用会自动检查当前已连接的只读设备（不包括您手动设置为只读的设备），并尝试将它们挂载为读写模式
+- **打开开关时**：立即检查当前已连接、仍为只读且已挂载的设备，并尝试挂载为读写
+- **之后插入设备时**：设备变化后自动检查新接入的只读设备
+- 已经是读写模式、尚未挂载，或没有可用卷的设备会被跳过
 
-**使用场景：**
+**什么时候不会自动挂载：**
 
-- 频繁使用多个 NTFS 设备，希望自动挂载而不需要每次手动操作
-- 需要批量处理多个设备时，可以一次性启用自动读写功能
-- 临时需要自动挂载功能时，可以随时开启或关闭
+- **手动只读**：把设备还原为只读，或重置设备前，会记住这次选择。只要设备仍连接着，自动读写都不会再把它改回读写
+- **手动读写会取消记住**：之后再手动挂载为读写，会取消这次记住的选择
+- **还原只读后的短暂停顿**：还原或重置后约 8 秒内不会立刻改回读写，避免刚完成的操作被覆盖
+- **修复期间**：修复设备期间会暂停该设备的自动读写约 2 分钟
+- **同一轮只尝试一次**：一次设备变化里，同一设备只会尝试一次。失败后不会在这一轮里反复重试，下一次插入或再次打开开关时才会重新尝试
 
-**注意事项：**
+**拔出后如何恢复：**
 
-- 自动读写功能需要管理员权限，首次挂载时会提示输入密码
-- 如果您手动将设备设置为只读，该设备会被添加到"手动只读设备"列表中，自动读写功能不会再次挂载它
-- 如果您手动将设备挂载为读写模式，该设备会从"手动只读设备"列表中移除，之后可以正常使用自动读写功能
-- 自动读写功能不会影响您手动操作的设备，您可以随时手动挂载或卸载设备
-
-**状态重置机制：**
-
-为了确保自动读写功能的智能性和用户体验，应用实现了以下状态重置机制：
-
-- **冷却期保护**：当您手动将设备设置为只读或执行重置操作时，系统会设置 8 秒的冷却期。在此期间，自动读写功能不会触发，避免刚设置的状态被立即覆盖
-- **设备拔出重置**：当设备被拔出后，如果在 8-9 秒内重新插入，手动只读状态会保留；如果超过 9 秒后重新插入，设备会自动从"手动只读设备"列表中移除，恢复默认行为，可以正常使用自动读写功能
-- **智能清理**：系统会自动清理已拔出设备的冷却期记录和手动只读状态，确保设备重新插入后能够正常工作
+手动只读只在这一次连接期间有效。设备推出或拔出并超过约 9 秒后，记住的选择会清除；再次插入时按默认可读写处理。9 秒内重新出现会保留，以免还原只读时的短暂卸载被误认为已经拔出。
 
 ### 卸载设备
 
@@ -235,6 +250,13 @@ brew install ntfs-3g-mac
 
 **原因说明**：此错误通常发生在挂载操作被强制中断（如强制退出应用、系统崩溃等）时，设备仍处于被占用状态，需要先卸载并修复后才能重新挂载。
 
+**使用重置按钮**：遇到"Resource busy"错误，也可以直接点击该按钮。重置功能会自动执行以下操作：
+- 卸载设备
+- 修复文件系统
+- 清理设备占用状态
+
+重置操作需要管理员权限，适用于快速解决设备占用问题。
+
 ### 安装依赖失败怎么办？
 
 如果安装过程中遇到问题，请检查以下几点：
@@ -259,6 +281,37 @@ brew install ntfs-3g-mac
    - 运行 `brew update` 更新 Homebrew
    - 检查是否有权限问题
 
+### macOS 大版本更新后提示 MacFUSE 过旧
+
+如果出现以下提示，表示当前安装的 macFUSE 版本与正在运行的 macOS 不兼容：
+
+> The installed version of macFUSE is too old for the operating system. Please upgrade your macFUSE installation to one that is compatible with the currently running version of macOS.
+
+请按以下步骤处理：
+
+1. **允许来自所有来源的应用**
+
+   在终端执行：
+
+   ```bash
+   sudo spctl --master-disable
+   ```
+
+   如果终端提示 `Globally disabling the assessment system needs to be confirmed in System Settings.`，请重新打开“系统设置 → 隐私与安全性”，在“安全性”区域找到“允许以下来源的应用程序”，选择“所有来源”。不同 macOS 版本的选项名称可能略有不同。
+
+   > [!WARN]
+   > 此命令会全局关闭 Gatekeeper 的应用安全评估，降低系统安全性。仅在确有需要时使用；完成 macFUSE 升级和系统扩展批准后，可执行 `sudo spctl --master-enable` 恢复默认评估。
+
+2. **升级 macFUSE**
+
+   ```bash
+   brew upgrade --cask --greedy macfuse
+   ```
+
+3. **批准系统扩展并重启**
+
+   前往“系统设置 → 隐私与安全性”批准 macFUSE 系统扩展，然后按提示重启 Mac。
+
 如果仍然无法解决，请参考各依赖的官方文档或寻求技术支持。
 
 ### 卸载设备后无法访问？
@@ -271,7 +324,8 @@ brew install ntfs-3g-mac
 
 - 依赖检查结果
 - 设备检测状态
-- 挂载/卸载操作结果
+- 挂载、卸载、推出操作结果
+- 修复、重命名、格式化操作结果
 - 错误信息和警告
 
 日志可以帮助您排查问题和跟踪操作历史。可以随时点击"清空"按钮清除所有日志记录。

@@ -198,6 +198,20 @@
   // 暴露到 window 对象，供外部调用
   (window as any).refreshDevices = refreshDevices;
   (window as any).renderDevices = renderDevices;
+  (window as any).applyTrayDevicesSnapshot = async (snapshot: any[]): Promise<boolean> => {
+    if (!Array.isArray(snapshot) || !Refresh?.refreshDevices) return false;
+    await Refresh.refreshDevices(devicesList, true, state, snapshot);
+    devices.length = 0;
+    devices.push(...state.devices);
+    if ((window as any).AppModules?.Devices) {
+      (window as any).AppModules.Devices.devices = devices;
+    }
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const renderedCount = devicesList.querySelectorAll('.device-item').length;
+    return snapshot.length === 0
+      ? !!devicesList.querySelector('.empty-state')
+      : renderedCount === snapshot.length;
+  };
 
   // 监听 body 类变化，当添加 tray-window 类时重新渲染
   if (typeof MutationObserver !== 'undefined') {
@@ -679,13 +693,12 @@
     if (quitBtn) {
       quitBtn.addEventListener('click', async () => {
         try {
-          const confirmTitle = t('tray.quitConfirmTitle') || '确认退出';
-          const confirmMessage = t('tray.quitConfirmMessage') || '确定要退出应用吗？';
-
-          const confirmed = await electronAPI.showConfirmDialog(confirmTitle, confirmMessage);
-
-          if (confirmed && electronAPI.quitApp) {
-            await electronAPI.quitApp();
+          if (electronAPI.runDeviceActionInMainWindow) {
+            await electronAPI.runDeviceActionInMainWindow({ action: 'quit' });
+            return;
+          }
+          if (electronAPI.showMainWindow) {
+            await electronAPI.showMainWindow();
           }
         } catch (error) {
           console.error('退出应用失败:', error);
@@ -726,10 +739,12 @@
     // 监听主题变化
     if (window.electronAPI && window.electronAPI.onThemeChange) {
       window.electronAPI.onThemeChange((isLightMode: boolean) => {
-        if (isLightMode) {
-          document.body.classList.add('light-theme');
-        } else {
-          document.body.classList.remove('light-theme');
+        document.documentElement.classList.toggle('light-theme', isLightMode);
+        document.body.classList.toggle('light-theme', isLightMode);
+        try {
+          localStorage.setItem('app-theme', isLightMode ? 'light' : 'dark');
+        } catch (e) {
+          // 静默处理
         }
       });
     }
@@ -737,9 +752,9 @@
     // 初始化主题
     try {
       const savedTheme = localStorage.getItem('app-theme');
-      if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-      }
+      const isLight = savedTheme !== 'dark';
+      document.documentElement.classList.toggle('light-theme', isLight);
+      document.body.classList.toggle('light-theme', isLight);
     } catch (e) {
       // 静默处理
     }

@@ -18,6 +18,13 @@
     "quit": "退出",
     "file": "文件",
     "close": "关闭",
+    "edit": "编辑",
+    "undo": "撤销",
+    "redo": "重做",
+    "cut": "剪切",
+    "copy": "复制",
+    "paste": "粘贴",
+    "selectAll": "全选",
     "view": "视图",
     "reload": "重新加载",
     "forceReload": "强制重新加载",
@@ -53,6 +60,10 @@
   "dependencies": {
     "title": "系统依赖",
     "checkButton": "检查依赖",
+    "autoInstall": "一键安装",
+    "autoInstallTitle": "在终端中依次自动安装缺失依赖",
+    "autoInstallOpened": "已打开终端。完成当前安装后会自动进入下一步，全部完成后会提示「所有步骤已完成」。",
+    "autoInstallFailed": "打开终端失败: {error}",
     "checking": "正在检查...",
     "installed": "已安装",
     "installedOptional": "已安装（可选）",
@@ -75,18 +86,26 @@
     },
     "brew": {
       "name": "Homebrew",
-      "description": "macOS 的包管理器，用于安装和管理软件包",
-      "installGuide": "在终端运行上述命令，按照提示完成安装。如果网络较慢，可以使用国内镜像源。"
+      "description": "macOS 的包管理器，以下所有依赖都需要通过 Homebrew 安装",
+      "installGuide": "在终端运行上述命令，按照提示完成安装。如果网络较慢，可尝试下方的中国大陆镜像源安装命令。",
+      "installGuideMirrorCommandLabel": "中国大陆镜像源安装命令："
     },
     "macfuse": {
       "name": "MacFUSE",
-      "description": "文件系统用户空间框架，ntfs-3g 需要此依赖",
-      "installGuide": "需要先安装 Homebrew。在终端运行上述命令即可安装。"
+      "description": "文件系统用户空间框架，ntfs-3g 需要此依赖。",
+      "installGuide": "Apple Silicon 默认阻止第三方内核扩展：关机后长按电源键进入启动选项 → 选项 → 继续 → 实用工具 → 启动安全性实用工具，选中系统盘，打开安全策略，选择降低安全性，并勾选“允许用户管理来自被认可开发者的内核扩展”。",
+      "installGuide2": "macOS 升级后若提示“The installed version of macFUSE is too old for the operating system”，请按以下步骤处理。",
+      "installGuide2Step1": "在终端运行以下命令，然后在“系统设置 > 隐私与安全性”中开启“任何来源”：",
+      "installGuide2Command1": "sudo spctl --master-disable",
+      "installGuide2Step2": "在终端运行以下命令升级 MacFUSE：",
+      "installGuide2Command2": "brew upgrade --cask --greedy macfuse",
+      "installGuide2Step3": "在“隐私与安全性”中批准 macFUSE 扩展，然后重启 Mac。"
     },
     "ntfs3g": {
       "name": "ntfs-3g",
       "description": "NTFS 文件系统驱动，提供 NTFS 读写支持",
-      "installGuide": "需要先安装 Homebrew 和 MacFUSE。在终端运行上述命令即可安装。"
+      "installGuide": "需要先安装 Homebrew 和 MacFUSE。在终端运行上述命令即可安装。",
+      "installGuideTip": "macFUSE、ntfs-3g 安装完成后，在“通用”设置中，依次选择“登录项与扩展” > “扩展” > “按类别” > “文件系统扩展”。随后点击该项的信息图标，并启用 ntfs-3g（如存在）及 macFUSE 等相关选项。"
     },
     "fswatch": {
       "name": "fswatch (可选)",
@@ -114,6 +133,20 @@
     "remount": "重新读写",
     "reset": "重置",
     "resetTooltip": "重置设备（卸载并修复，用于解决 Resource busy 错误）",
+    "repair": "修复",
+    "repairTooltip": "修复",
+    "repairConfirm": "修复 NTFS 分区？",
+    "repairConfirmNote": "ntfsfix 只能处理基础问题，无法替代 Windows 的 chkdsk，修复过程可能导致数据丢失。",
+    "targetDevice": "目标设备：{name}",
+    "rename": "重命名",
+    "renameTooltip": "重命名",
+    "renameTitle": "重命名",
+    "renameNote": "注意：\n1. 设备正在传输文件时，请不要重命名，以免中断传输或损坏卷标\n2. 确认后会写入新名称，并自动卸载再挂载，名称才会生效",
+    "renamePlaceholder": "输入新的卷标名称",
+    "format": "格式化",
+    "formatTooltip": "格式化",
+    "formatConfirm": "此操作将抹掉整块硬盘全部分区及数据！",
+    "formatConfirmNote": "1. 操作不可撤销，请务必先备份重要数据。\n2. 格式化过程可能需要较长时间，期间将多次卸载并重新挂载。\n3. 请勿关闭设备或中断操作，耐心等待完成。\n是否继续？",
     "unmount": "卸载",
     "eject": "推出",
     "restoreReadOnly": "还原为只读",
@@ -144,6 +177,7 @@
   "dialog": {
     "cancel": "取消",
     "confirm": "确认",
+    "continue": "继续",
     "ok": "确定"
   },
   "logs": {
@@ -173,6 +207,15 @@
     "loading": "加载中...",
     "loadError": "加载失败: {error}",
     "unknownError": "未知错误",
+    "toc": "目录",
+    "toggleToc": "显示或隐藏目录",
+    "toggleSearch": "显示或隐藏搜索",
+    "searchPlaceholder": "搜索指南...",
+    "searchNoResult": "无匹配",
+    "searchCount": "{current}/{total}",
+    "searchPrev": "上一个",
+    "searchNext": "下一个",
+    "backToTop": "回到顶部 {percent}%",
     "icons": {
       "title": "界面图标说明",
       "intro": "应用主界面提供了多个功能图标，帮助您快速访问常用功能：",
@@ -180,7 +223,7 @@
         "title": "标题栏图标",
         "autoMount": {
           "name": "自动读写图标",
-          "description": "启用后，新插入的 NTFS 设备会自动挂载为读写模式。图标激活时显示为蓝色。"
+          "description": "启用后，后台会把新插入的只读 NTFS 设备挂载为读写，不依赖窗口是否打开。手动还原为只读的设备在本次连接期间不会被改回。图标激活时显示为蓝色。"
         },
         "trayMode": {
           "name": "托盘模式图标",
@@ -215,12 +258,17 @@
         "refresh": {
           "name": "刷新图标",
           "description": "刷新设备列表，重新检测已连接的 NTFS 设备。"
+        },
+        "done": {
+          "name": "完成图标",
+          "description": "格式化或修复成功后，对应的格式化/修复图标会短暂换成此完成标记，约 3 秒后恢复。"
         }
       }
     }
   },
   "settings": {
     "title": "应用设置",
+    "hideIconTooltips": "长按 3 秒切换图标按钮提示",
     "savePassword": "保存管理员密码",
     "savePasswordDesc": "启用后，应用将使用 macOS Keychain 安全保存您的管理员密码，以便自动输入",
     "deletePassword": "删除保存的密码",
@@ -252,7 +300,7 @@
       "de": "Deutsch (DE)"
     },
     "autoMount": "自动读写",
-    "autoMountDesc": "启用后，新插入的 NTFS 设备将自动以读写模式挂载",
+    "autoMountDesc": "启用后，后台会把新插入的只读 NTFS 设备挂载为读写，无需打开窗口。手动还原为只读的设备在本次连接期间不会被改回",
     "trayMode": "托盘模式",
     "trayModeDesc": "启用后，关闭窗口时不会退出应用，而是最小化到系统托盘。可以通过托盘图标快速管理 NTFS 设备。",
     "preventSleep": "禁止休眠",
@@ -297,6 +345,38 @@
     "resetting": "正在重置 {name}（卸载并修复）...",
     "resetSuccess": "重置成功",
     "resetError": "重置失败",
+    "repairing": "正在修复 {name} 的 NTFS 文件系统...",
+    "repairSuccess": "{name} 的 NTFS 文件系统已修复并恢复为{mode}模式",
+    "repairError": "修复 NTFS 文件系统失败",
+    "repairResultTitle": "修复完成",
+    "repairFailedTitle": "修复未完成",
+    "repairDeviceUnavailable": "设备已断开或分区路径已变化，请刷新后重试",
+    "repairUnmountFailed": "无法卸载设备：{error}",
+    "repairFilesystemFailed": "ntfsfix 修复失败：{error}",
+    "repairRemountFailed": "修复完成，但重新挂载失败：{error}",
+    "repairAndRemountFailed": "修复失败：{error}；重新挂载也失败：{mountError}",
+    "renaming": "正在将 {name} 重命名为 {newName}...",
+    "renameSuccess": "{name} 已重命名为 {newName}，并已重新挂载",
+    "renameError": "重命名失败",
+    "renameFailedTitle": "无法完成重命名",
+    "renameDeviceUnavailable": "设备已断开或分区路径已变化，请刷新后重试",
+    "renameInvalidName": "卷标不能为空，最长 32 个字符，且不能包含 \\ / : * ? \" < > |",
+    "renameToolMissing": "未找到 ntfslabel。请先安装 ntfs-3g-mac。",
+    "renameUnmountFailed": "无法卸载设备：{error}",
+    "renameRemountFailed": "卷标已写入，但重新挂载失败：{error}",
+    "renameFailedNeedChkdsk": "无法写入 NTFS 卷标。请把设备接到 Windows 电脑，以管理员身份运行下面的命令修复，完成后再回到 Mac 重试：\nchkdsk X: /x /r /f\n将 X: 替换为该设备的实际盘符。",
+    "formatting": "正在将 {name} 格式化为 GPT NTFS...",
+    "formatSuccess": "{name} 已格式化为 GPT NTFS，并已重新挂载",
+    "formatError": "格式化失败",
+    "formatFailedTitle": "无法完成格式化",
+    "formatDeviceUnavailable": "设备已断开或分区路径已变化，请刷新后重试",
+    "formatNotMounted": "请先挂载设备后再格式化",
+    "formatNotAllowed": "只能格式化外接可移动磁盘，内置盘和虚拟盘不可用",
+    "formatToolMissing": "未找到 mkntfs。请先安装 ntfs-3g-mac。",
+    "formatEraseFailed": "整盘抹除失败：{error}",
+    "formatUnmountFailed": "无法卸载整盘：{error}",
+    "formatMkntfsFailed": "写入 NTFS 失败：{error}",
+    "formatRemountFailed": "已格式化为 NTFS，但重新挂载失败：{error}",
     "restoring": "正在还原 {name} 为只读模式...",
     "restoreSuccess": "还原成功",
     "restoreError": "还原失败",
@@ -308,6 +388,10 @@
       "prompt": "请输入你的Mac账户登录密码：",
       "cancel": "取消",
       "confirm": "确定",
+      "togglePassword": "显示/隐藏密码",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
+      "savePassword": "保存密码",
       "passwordEmpty": "密码不能为空",
       "passwordParseError": "无法解析密码输入结果：密码为空",
       "userCancelled": "用户取消了密码输入",
@@ -316,6 +400,9 @@
       "mountDeviceRetry": "挂载设备 {name} 为读写模式（请重新输入密码）",
       "unmountDevice": "卸载设备 {name}",
       "resetDevice": "重置设备 {name}（卸载并修复）",
+      "repairDevice": "修复设备 {name} 的 NTFS 文件系统",
+      "renameDevice": "重命名设备 {name}",
+      "formatDevice": "将设备 {name} 格式化为 GPT NTFS",
       "restoreToReadOnly": "还原设备 {name} 为只读模式"
     },
     "noDevicesToMount": "没有需要挂载的设备（所有设备已挂载为读写模式）",
@@ -352,6 +439,14 @@
     "projectLink": "项目地址",
     "email": "邮箱",
     "bluesky": "Bluesky",
-    "ok": "确定"
+    "ok": "确定",
+    "checkUpdates": "检查更新",
+    "checkingUpdates": "正在检查更新...",
+    "upToDate": "当前已是最新版本（{version}）。",
+    "updateAvailable": "发现新版本 {version}。",
+    "versionAhead": "当前版本（{version}）高于最新公开版本（{latestVersion}）。",
+    "checkFailed": "检查更新失败，请检查网络连接。",
+    "invalidRelease": "已连接到发布页，但版本信息无法识别。",
+    "viewReleases": "查看发布页"
   }
 }

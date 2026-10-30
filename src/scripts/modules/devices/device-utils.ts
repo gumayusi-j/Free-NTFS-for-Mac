@@ -25,11 +25,10 @@
   AppModules.Devices.Utils = {
     // 获取翻译文本的辅助函数
     t(key: string, params?: Record<string, string | number>): string {
-      const AppUtils = (window as any).AppUtils;
-      if (AppUtils && AppUtils.I18n && AppUtils.I18n.t) {
-        return AppUtils.I18n.t(key, params);
+      const i18n = (window as any).AppUtils?.I18n;
+      if (i18n?.isReady?.() && i18n.t) {
+        return i18n.t(key, params);
       }
-      // 如果 i18n 未初始化，返回 key
       return key;
     },
 
@@ -41,8 +40,10 @@
         return `${(bytes / 1024).toFixed(1)} KB`;
       } else if (bytes < 1024 * 1024 * 1024) {
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-      } else {
+      } else if (bytes < 1024 * 1024 * 1024 * 1024) {
         return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+      } else {
+        return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2)} TB`;
       }
     },
 

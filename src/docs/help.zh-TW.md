@@ -1,9 +1,17 @@
-## 免責聲明
+## 關於本軟體
 
-使用本工具掛載和修改 NTFS 設備存在資料遺失的風險。建議在使用前備份重要資料。本工具按"現狀"提供，不提供任何明示或暗示的擔保。使用本工具造成的任何資料損失，開發者不承擔責任。
+**Nigate** 是一款基於 ntfs-3g 的免費 macOS NTFS 儲存裝置讀寫工具。
 
-> [!WARN]
-> 該軟體的穩定運行和資料完整性依賴於儲存裝置的性能。為避免出現資料讀寫錯誤、傳輸中斷或裝置識別失敗等問題，推薦選用由優質快閃記憶體顆粒製成、讀寫性能有保障的U盤。
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> 作者主頁：[https://github.com/hoochanlon](https://github.com/hoochanlon)
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> 軟體專案：[https://github.com/hoochanlon/Free-NTFS-for-Mac](https://github.com/hoochanlon/Free-NTFS-for-Mac)
+- <img src="../imgs/svg/social/email.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> 聯絡電子郵件：[hoochanlon@outlook.com](mailto:hoochanlon@outlook.com)
+
+> [!IMPORTANT]
+> **免責聲明**
+>
+> 使用本工具掛載和修改 NTFS 設備存在資料遺失的風險。建議在使用前備份重要資料。本工具按"現狀"提供，不提供任何明示或暗示的擔保。使用本工具造成的任何資料損失，開發者不承擔責任。
+
+該軟體的穩定運行和資料完整性依賴於儲存裝置的性能。為避免出現資料讀寫錯誤、傳輸中斷或裝置識別失敗等問題，推薦選用由優質快閃記憶體顆粒製成、讀寫性能有保障的U盤。
 
 ## 系統要求
 
@@ -46,6 +54,10 @@ xcode-select --install
 
 #### 3. 安裝 MacFUSE
 
+> [!TIP]
+> Apple Silicon 預設會阻止第三方核心擴充功能。關機後長按電源鍵進入啟動選項 → 選項 → 繼續 → 工具程式 → 啟動安全性工具程式，選取系統磁碟，開啟安全性政策，選擇降低安全性，並勾選「允許使用者管理來自已識別開發者的核心擴充功能」。
+
+
 在終端執行以下命令：
 
 ```bash
@@ -61,6 +73,9 @@ brew tap gromgit/homebrew-fuse
 brew install ntfs-3g-mac
 ```
 
+> [!TIP]
+> macFUSE、ntfs-3g 安裝完成後，在「一般」設定中，依序選擇「登入項目與延伸功能」>「延伸功能」>「依類別」>「檔案系統延伸功能」。隨後點擊該項目的資訊圖示，並啟用 ntfs-3g（如存在）及 macFUSE 等相關選項。
+
 **注意**：安裝順序很重要，請按照 1 → 2 → 3 → 4 的順序依次安裝。
 
 ## 介面圖示說明
@@ -69,12 +84,16 @@ brew install ntfs-3g-mac
 
 ### 標題列圖示
 
-- <img src="../imgs/svg/devices/flash-auto.svg" alt="自動讀寫" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **自動讀寫圖示** - 啟用後，新插入的 NTFS 裝置會自動掛載為讀寫模式。圖示啟用時顯示為藍色。
+- <img src="../imgs/svg/devices/flash-auto.svg" alt="自動讀寫" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **自動讀寫圖示** - 啟用後，背景會把新插入的唯讀 NTFS 裝置掛載為讀寫，不依賴視窗是否開啟。手動還原為唯讀的裝置在本次連接期間不會被改回。圖示啟用時顯示為藍色。
 - <img src="../imgs/svg/devices/tray.svg" alt="托盤模式" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **托盤模式圖示** - 啟用後，關閉視窗時應用程式會最小化到系統托盤而不是退出。圖示啟用時顯示為紅色。
 - <img src="../imgs/svg/system/caffe.svg" alt="防止休眠" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **防止休眠圖示** - 啟用後，系統將禁止進入休眠狀態，確保裝置持續可用。圖示啟用時顯示為咖啡色。
 - <img src="../imgs/svg/system/protect.svg" alt="狀態保護" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **狀態保護圖示** - 長按3s可切換保護狀態。保護後，自動讀寫、託盤模式和防止休眠功能將被禁用，防止誤操作。圖示保護後顯示為綠色並帶有脈衝動畫。
 - <img src="../imgs/svg/ui/info.svg" alt="關於" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **關於圖示** - 開啟關於視窗，查看應用程式資訊和專案連結。
 - <img src="../imgs/svg/actions/exit.svg" alt="退出" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **退出圖示** - 退出應用程式。
+
+### 設定頁圖示
+
+- 🤫 **彩蛋圖示** - 位於「應用設定」標題旁，長按 3 秒可切換全域圖示按鈕懸停提示的顯示狀態；選擇會被保存。
 
 ### 標籤頁圖示
 
@@ -83,6 +102,13 @@ brew install ntfs-3g-mac
 ### 裝置管理圖示
 
 - <img src="../imgs/svg/actions/refresh.svg" alt="重新整理" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **重新整理圖示** - 重新整理裝置列表，重新偵測已連接的 NTFS 裝置。
+- <img src="../imgs/svg/actions/format.svg" alt="格式化" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **格式化圖示** - 將整塊外接磁碟重建為 GPT NTFS。操作會抹掉該磁碟上的全部分割區和資料，無法復原，請先備份。僅已掛載的外接碟顯示此圖示。
+- <img src="../imgs/svg/actions/repair.svg" alt="修復" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **修復圖示** - 點擊對應裝置的修復圖示並確認，即可嘗試修復該裝置的 NTFS 檔案系統。操作需要管理員權限並輸入密碼，可自動處理 Resource busy 錯誤。
+
+> [!tip]
+> <img src="../imgs/svg/actions/check-okey-done.svg" alt="完成" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **完成圖示** - 格式化或修復成功後，對應的格式化／修復圖示會短暫換成此完成標記，約 3 秒後恢復。
+
+**注意：ntfsfix 修復能力有限，無法取代 Windows 的 `chkdsk /f`。**
 
 ## 使用步驟
 
@@ -113,40 +139,30 @@ brew install ntfs-3g-mac
 
 ### 自動讀寫功能
 
-自動讀寫功能可以讓您無需手動操作，自動將新插入的 NTFS 設備掛載為讀寫模式。
+自動讀寫由應用程式背景直接執行，不依賴主視窗或托盤視窗是否開啟。啟用後，背景會在偵測到裝置變化時，把符合條件的唯讀 NTFS 裝置掛載為讀寫模式。
 
 **啟用方式：**
 
 - 在標題列點擊自動讀寫圖示（<img src="../imgs/svg/devices/flash-auto.svg" alt="自動讀寫" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;">），圖示變為藍色表示已啟用
-- 在托盤選單中勾選"自動讀寫"選項
-- 在主介面標題列的自動讀寫按鈕中切換
+- 在托盤選單中勾選「自動讀寫」選項
 
-**功能特點：**
+**什麼時候會自動掛載：**
 
-- **自動檢測新設備**：當您插入新的 NTFS 設備時，應用會自動檢測並掛載為讀寫模式
-- **智能跳過手動只讀設備**：如果您手動將某個設備設置為只讀，自動讀寫功能會尊重您的選擇，不會再次將其掛載為讀寫模式
-- **開啟時自動處理現有設備**：當您啟用自動讀寫功能時，應用會自動檢查當前已連接的只讀設備（不包括您手動設置為只讀的設備），並嘗試將它們掛載為讀寫模式
+- **打開開關時**：立即檢查目前已連接、仍為唯讀且已掛載的裝置，並嘗試掛載為讀寫
+- **之後插入裝置時**：裝置變化後自動檢查新接入的唯讀裝置
+- 已經是讀寫模式、尚未掛載，或沒有可用磁碟區的裝置會被略過
 
-**使用場景：**
+**什麼時候不會自動掛載：**
 
-- 頻繁使用多個 NTFS 設備，希望自動掛載而不需要每次手動操作
-- 需要批量處理多個設備時，可以一次性啟用自動讀寫功能
-- 臨時需要自動掛載功能時，可以隨時開啟或關閉
+- **手動唯讀**：把裝置還原為唯讀，或重設裝置前，會記住這次選擇。只要裝置仍連接著，自動讀寫都不會再把它改回讀寫
+- **手動讀寫會取消記住**：之後再手動掛載為讀寫，會取消這次記住的選擇
+- **還原唯讀後的短暫停頓**：還原或重設後約 8 秒內不會立刻改回讀寫，避免剛完成的操作被覆蓋
+- **修復期間**：修復裝置期間會暫停該裝置的自動讀寫約 2 分鐘
+- **同一輪只嘗試一次**：一次裝置變化裡，同一裝置只會嘗試一次。失敗後不會在這一輪裡反覆重試，下一次插入或再次打開開關時才會重新嘗試
 
-**注意事項：**
+**退出後如何恢復：**
 
-- 自動讀寫功能需要管理員權限，首次掛載時會提示輸入密碼
-- 如果您手動將設備設置為只讀，該設備會被添加到"手動只讀設備"列表中，自動讀寫功能不會再次掛載它
-- 如果您手動將設備掛載為讀寫模式，該設備會從"手動只讀設備"列表中移除，之後可以正常使用自動讀寫功能
-- 自動讀寫功能不會影響您手動操作的設備，您可以隨時手動掛載或卸載設備
-
-**狀態重置機制：**
-
-為了確保自動讀寫功能的智能性和用戶體驗，應用程式實現了以下狀態重置機制：
-
-- **冷卻期保護**：當您手動將設備設置為只讀或執行重置操作時，系統會設置 8 秒的冷卻期。在此期間，自動讀寫功能不會觸發，避免剛設置的狀態被立即覆蓋
-- **設備拔出重置**：當設備被拔出後，如果在 8-9 秒內重新插入，手動只讀狀態會保留；如果超過 9 秒後重新插入，設備會自動從"手動只讀設備"列表中移除，恢復預設行為，可以正常使用自動讀寫功能
-- **智能清理**：系統會自動清理已拔出設備的冷卻期記錄和手動只讀狀態，確保設備重新插入後能夠正常工作
+手動唯讀只在這一次連接期間有效。裝置退出或拔出並超過約 9 秒後，記住的選擇會清除；再次插入時按預設可讀寫處理。9 秒內重新出現會保留，以免還原唯讀時的短暫卸載被誤認為已經拔出。
 
 ### 掛載設備為讀寫模式
 
@@ -242,7 +258,7 @@ brew install ntfs-3g-mac
 
 **原因說明**：此錯誤通常發生在掛載操作被強制中斷（如強制退出應用程式、系統崩潰等）時，設備仍處於被佔用狀態，需要先卸載並修復後才能重新掛載。
 
-**使用重置按鈕**：如果遇到 "Resource busy" 錯誤，也可以直接點擊設備列表中的「重置」按鈕。重置功能會自動執行以下操作：
+**使用重置按鈕**：遇到「Resource busy」錯誤，也可以直接點擊該按鈕。重置功能會自動執行以下操作：
 - 卸載設備
 - 修復檔案系統
 - 清理設備佔用狀態
@@ -273,6 +289,37 @@ brew install ntfs-3g-mac
    - 執行 `brew update` 更新 Homebrew
    - 檢查是否有權限問題
 
+### macOS 大版本更新後提示 MacFUSE 版本過舊
+
+如果出現以下提示，表示目前安裝的 macFUSE 版本與正在執行的 macOS 不相容：
+
+> The installed version of macFUSE is too old for the operating system. Please upgrade your macFUSE installation to one that is compatible with the currently running version of macOS.
+
+請依照以下步驟處理：
+
+1. **允許來自所有來源的 App**
+
+   在終端機執行：
+
+   ```bash
+   sudo spctl --master-disable
+   ```
+
+   如果終端機提示 `Globally disabling the assessment system needs to be confirmed in System Settings.`，請重新開啟「系統設定 → 隱私權與安全性」，在「安全性」區域找到「允許以下來源的 App」，選擇「所有來源」。不同 macOS 版本的選項名稱可能略有不同。
+
+   > [!WARN]
+   > 此命令會全域關閉 Gatekeeper 的 App 安全評估，降低系統安全性。僅在確有需要時使用；完成 macFUSE 升級和系統擴充功能核准後，可執行 `sudo spctl --master-enable` 恢復預設評估。
+
+2. **升級 macFUSE**
+
+   ```bash
+   brew upgrade --cask --greedy macfuse
+   ```
+
+3. **核准系統擴充功能並重新啟動**
+
+   前往「系統設定 → 隱私權與安全性」核准 macFUSE 系統擴充功能，然後依照提示重新啟動 Mac。
+
 如果仍然無法解決，請參考各依賴的官方文件或尋求技術支援。
 
 ### 卸載設備後無法存取？
@@ -285,7 +332,8 @@ brew install ntfs-3g-mac
 
 - 依賴檢查結果
 - 設備檢測狀態
-- 掛載/卸載操作結果
+- 掛載、卸載、推出操作結果
+- 修復、重新命名、格式化操作結果
 - 錯誤資訊和警告
 
 **啟用操作日誌：**

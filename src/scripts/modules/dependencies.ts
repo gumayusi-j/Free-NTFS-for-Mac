@@ -12,6 +12,7 @@
   const AppModules = (window as any).AppModules;
   const electronAPI = (window as any).electronAPI;
   const AppUtils = (window as any).AppUtils;
+  const macfuseInstallCommand = 'if brew list --cask macfuse >/dev/null 2>&1; then brew upgrade --cask --greedy macfuse; else brew install --cask macfuse; fi';
 
   // 获取翻译文本的辅助函数
   function t(key: string, params?: Record<string, string | number>): string {
@@ -37,10 +38,19 @@
       description: t(`dependencies.${key}.description`),
       installCommand: key === 'swift' ? 'xcode-select --install' :
                      key === 'brew' ? '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"' :
-                     key === 'macfuse' ? 'brew install --cask macfuse' :
+                     key === 'macfuse' ? macfuseInstallCommand :
                      key === 'fswatch' ? t(`dependencies.${key}.installCommand`) :
                      'brew tap gromgit/homebrew-fuse && brew install ntfs-3g-mac',
-      installGuide: t(`dependencies.${key}.installGuide`)
+      installGuide: t(`dependencies.${key}.installGuide`),
+                installGuideMirrorCommand: key === 'brew' ? '/bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"' : '',
+                installGuideMirrorCommandLabel: key === 'brew' ? t(`dependencies.${key}.installGuideMirrorCommandLabel`) : '',
+      installGuide2: key === 'macfuse' ? t(`dependencies.${key}.installGuide2`) : '',
+      installGuide2Step1: key === 'macfuse' ? t(`dependencies.${key}.installGuide2Step1`) : '',
+      installGuide2Command1: key === 'macfuse' ? t(`dependencies.${key}.installGuide2Command1`) : '',
+      installGuide2Step2: key === 'macfuse' ? t(`dependencies.${key}.installGuide2Step2`) : '',
+      installGuide2Command2: key === 'macfuse' ? t(`dependencies.${key}.installGuide2Command2`) : '',
+      installGuide2Step3: key === 'macfuse' ? t(`dependencies.${key}.installGuide2Step3`) : '',
+      installGuideTip: key === 'ntfs3g' ? t(`dependencies.${key}.installGuideTip`) : ''
     };
   }
 
@@ -61,7 +71,7 @@
     macfuse: {
       name: 'MacFUSE',
       description: '文件系统用户空间框架，ntfs-3g 需要此依赖',
-      installCommand: 'brew install --cask macfuse',
+      installCommand: macfuseInstallCommand,
       installGuide: '需要先安装 Homebrew。在终端运行上述命令即可安装。'
     },
     ntfs3g: {
@@ -157,9 +167,9 @@
       statusText: HTMLElement
     ): Promise<void> {
       try {
-        // 快速检查所有依赖（使用较短的超时时间）
+        // 后台检查包含 MacFUSE 状态查询，允许其完成后再刷新缓存
         const quickCheckPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('timeout')), 5000); // 5秒超时
+          setTimeout(() => reject(new Error('timeout')), 15000);
         });
 
         const freshDeps = await Promise.race([
@@ -173,7 +183,7 @@
         }
 
         // 比较关键依赖的状态
-        const keyDeps = ['swift', 'brew', 'macfuse', 'ntfs3g', 'macosVersion'];
+        const keyDeps = ['swift', 'brew', 'macfuse', 'ntfs3g', 'fswatch', 'macosVersion'];
         const hasChanged = keyDeps.some(key => {
           return cached[key] !== freshDeps[key];
         });
@@ -211,10 +221,49 @@
       }
     },
 
-    // 检查依赖
+    // 检查依赖。手动触发只在按钮上显示忙碌，不盖全页遮罩。
+    setCheckButtonBusy(busy: boolean): void {
+      const button = document.getElementById('checkDepsBtn') as HTMLButtonElement | null;
+      if (!button) return;
+
+      button.classList.toggle('is-checking', busy);
+      button.disabled = busy;
+      button.setAttribute('aria-busy', busy ? 'true' : 'false');
+    },
+
+    setAutoInstallButtonBusy(busy: boolean): void {
+      const button = document.getElementById('autoInstallDepsBtn') as HTMLButtonElement | null;
+      if (!button) return;
+
+      button.disabled = busy;
+      button.setAttribute('aria-busy', busy ? 'true' : 'false');
+    },
+
+    async openAutoInstaller(): Promise<void> {
+      if (!electronAPI || typeof electronAPI.openDependencyInstaller !== 'function') {
+        await AppUtils.Logs.addLog(t('dependencies.autoInstallFailed', { error: 'unavailable' }), 'error');
+        return;
+      }
+
+      try {
+        AppModules.Dependencies.setAutoInstallButtonBusy(true);
+        const result = await electronAPI.openDependencyInstaller();
+        if (result && result.success) {
+          await AppUtils.Logs.addLog(t('dependencies.autoInstallOpened'), 'info');
+        } else {
+          const errorMessage = result?.error || 'unknown';
+          await AppUtils.Logs.addLog(t('dependencies.autoInstallFailed', { error: errorMessage }), 'error');
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        await AppUtils.Logs.addLog(t('dependencies.autoInstallFailed', { error: errorMessage }), 'error');
+      } finally {
+        AppModules.Dependencies.setAutoInstallButtonBusy(false);
+      }
+    },
+
     async checkDependencies(
       depsList: HTMLElement,
-      loadingOverlay: HTMLElement,
       statusDot: HTMLElement,
       statusText: HTMLElement,
       forceRefresh: boolean = false
@@ -241,7 +290,7 @@
       }
 
       try {
-        AppUtils.UI.showLoading(loadingOverlay, true);
+        AppModules.Dependencies.setCheckButtonBusy(true);
         AppUtils.UI.updateStatus('active', t('status.checking'), statusDot, statusText);
 
         // 添加超时保护
@@ -278,7 +327,7 @@
         await AppUtils.Logs.addLog(t('dependencies.checkFailed', { error: errorMessage }), 'error');
         console.error('检查依赖错误:', error);
       } finally {
-        AppUtils.UI.showLoading(loadingOverlay, false);
+        AppModules.Dependencies.setCheckButtonBusy(false);
       }
     },
 
@@ -350,7 +399,51 @@
             </div>
           </div>
           ` : ''}
-          <p class="guide-instructions">${info.installGuide}</p>
+          <p class="guide-instructions${dep.key === 'macfuse' ? ' guide-tip' : ''}">${info.installGuide}</p>
+          ${info.installGuideTip ? `
+          <p class="guide-instructions guide-tip">${info.installGuideTip}</p>
+          ` : ''}
+          ${info.installGuideMirrorCommand ? `
+          <div class="guide-command guide-mirror-command">
+            <label>${info.installGuideMirrorCommandLabel}</label>
+            <div class="command-box">
+              <code class="command-text">${info.installGuideMirrorCommand}</code>
+              <button class="btn-copy" data-command="${info.installGuideMirrorCommand.replace(/"/g, '&quot;')}" title="${t('dependencies.copyCommand')}" aria-label="${t('dependencies.copyCommand')}">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5.5 3.5H3.5C2.67 3.5 2 4.17 2 5V12.5C2 13.33 2.67 14 3.5 14H9.5C10.33 14 11 13.33 11 12.5V10.5M11 5.5H13.5C14.33 5.5 15 6.17 15 7V12.5C15 13.33 14.33 14 13.5 14H11M11 5.5V3.5C11 2.67 10.33 2 9.5 2H7M11 5.5H9.5C8.67 5.5 8 6.17 8 7V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          ` : ''}
+          ${info.installGuide2 ? `
+          <div class="help-important macfuse-upgrade-guide">
+            <p>${info.installGuide2}</p>
+            <p class="macfuse-upgrade-step">${info.installGuide2Step1}</p>
+            <div class="guide-command macfuse-upgrade-command">
+              <div class="command-box">
+                <code class="command-text">${info.installGuide2Command1}</code>
+                <button class="btn-copy" data-command="${info.installGuide2Command1}" title="${t('dependencies.copyCommand')}" aria-label="${t('dependencies.copyCommand')}">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5.5 3.5H3.5C2.67 3.5 2 4.17 2 5V12.5C2 13.33 2.67 14 3.5 14H9.5C10.33 14 11 13.33 11 12.5V10.5M11 5.5H13.5C14.33 5.5 15 6.17 15 7V12.5C15 13.33 14.33 14 13.5 14H11M11 5.5V3.5C11 2.67 10.33 2 9.5 2H7M11 5.5H9.5C8.67 5.5 8 6.17 8 7V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p class="macfuse-upgrade-step">${info.installGuide2Step2}</p>
+            <div class="guide-command macfuse-upgrade-command">
+              <div class="command-box">
+                <code class="command-text">${info.installGuide2Command2}</code>
+                <button class="btn-copy" data-command="${info.installGuide2Command2}" title="${t('dependencies.copyCommand')}" aria-label="${t('dependencies.copyCommand')}">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5.5 3.5H3.5C2.67 3.5 2 4.17 2 5V12.5C2 13.33 2.67 14 3.5 14H9.5C10.33 14 11 13.33 11 12.5V10.5M11 5.5H13.5C14.33 5.5 15 6.17 15 7V12.5C15 13.33 14.33 14 13.5 14H11M11 5.5V3.5C11 2.67 10.33 2 9.5 2H7M11 5.5H9.5C8.67 5.5 8 6.17 8 7V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p class="macfuse-upgrade-step">${info.installGuide2Step3}</p>
+          </div>
+          ` : ''}
         `;
         depsList.appendChild(guideCard);
       });

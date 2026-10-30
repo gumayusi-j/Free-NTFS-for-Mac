@@ -123,12 +123,16 @@
               }
             }
 
-            // 处理 GitHub alert 语法：将 > [!WARN] 等转换为警告框
+            // 处理 GitHub alert 语法，并保留旧版 [!WARN] 写法
             // marked 会将 blockquote 渲染为 <blockquote><p>[!WARN]<br>内容</p></blockquote>
             // 或者 <blockquote><p>[!WARN]</p><p>内容</p></blockquote>
             html = html.replace(
-              /<blockquote>\s*<p>\[!WARN\](?:<br>|<\/p>\s*<p>)([\s\S]*?)(?:<\/p>\s*)?<\/blockquote>/g,
-              (match: string, content: string) => {
+              /<blockquote>\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|WARN)\](?:<br>|<\/p>\s*<p>)([\s\S]*?)(?:<\/p>\s*)?<\/blockquote>/gi,
+              (match: string, alertType: string, content: string) => {
+                const normalizedType = alertType.toUpperCase();
+                const calloutClass = normalizedType === 'WARN' || normalizedType === 'WARNING'
+                  ? 'help-warning'
+                  : `help-${normalizedType.toLowerCase()}`;
                 // 移除多余的空白和换行，但保留 HTML 结构
                 let cleanedContent = content.trim();
                 // 移除开头的 <br>
@@ -142,14 +146,14 @@
                   if (!cleanedContent.endsWith('</p>')) {
                     cleanedContent = cleanedContent + '</p>';
                   }
-                  return `<div class="help-warning">${cleanedContent}</div>`;
+                  return `<div class="${calloutClass}">${cleanedContent}</div>`;
                 } else if (cleanedContent.includes('</p>')) {
                   // 单个段落，移除末尾的 </p> 并重新包裹
                   cleanedContent = cleanedContent.replace(/<\/p>\s*$/, '').trim();
-                  return `<div class="help-warning"><p>${cleanedContent}</p></div>`;
+                  return `<div class="${calloutClass}"><p>${cleanedContent}</p></div>`;
                 } else {
                   // 纯文本内容，直接包裹
-                  return `<div class="help-warning"><p>${cleanedContent}</p></div>`;
+                  return `<div class="${calloutClass}"><p>${cleanedContent}</p></div>`;
                 }
               }
             );
@@ -205,22 +209,50 @@
               );
             }
 
-            container.innerHTML = `<div class="help-content">${html}</div>`;
+            const article = (container.querySelector('#helpArticle') as HTMLElement)
+              || (container.querySelector('.help-content') as HTMLElement);
+            if (article && article !== container) {
+              article.innerHTML = html;
+            } else {
+              container.innerHTML = `<div class="help-content" id="helpArticle">${html}</div>`;
+            }
 
-            // 绑定代码复制按钮事件
-            AppUtils.Markdown.setupCopyButtons(container);
+            const bindRoot = container.id === 'helpTab' ? container : (container.closest('#helpTab') as HTMLElement) || container;
+            AppUtils.Markdown.setupCopyButtons(bindRoot);
+            if (AppUtils.HelpReader && typeof AppUtils.HelpReader.bind === 'function') {
+              AppUtils.HelpReader.bind(bindRoot);
+            }
           } else {
-            // 如果没有 marked，使用简单的文本显示
-            container.innerHTML = `<div class="help-content"><pre>${result.content}</pre></div>`;
+            const article = (container.querySelector('#helpArticle') as HTMLElement)
+              || (container.querySelector('.help-content') as HTMLElement);
+            if (article && article !== container) {
+              article.innerHTML = `<pre>${result.content}</pre>`;
+            } else {
+              container.innerHTML = `<div class="help-content"><pre>${result.content}</pre></div>`;
+            }
             console.warn('marked 库未加载，使用纯文本显示');
           }
         } else {
           const errorMsg = t('help.loadError', { error: result.error || t('help.unknownError') });
-          container.innerHTML = `<div class="help-content"><p class="error">${errorMsg}</p></div>`;
+          const article = (container.querySelector('#helpArticle') as HTMLElement)
+            || (container.querySelector('.help-content') as HTMLElement);
+          const errorHtml = `<p class="error">${errorMsg}</p>`;
+          if (article && article !== container) {
+            article.innerHTML = errorHtml;
+          } else {
+            container.innerHTML = `<div class="help-content">${errorHtml}</div>`;
+          }
         }
       } catch (error) {
         const errorMsg = t('help.loadError', { error: error instanceof Error ? error.message : String(error) });
-        container.innerHTML = `<div class="help-content"><p class="error">${errorMsg}</p></div>`;
+        const article = (container.querySelector('#helpArticle') as HTMLElement)
+          || (container.querySelector('.help-content') as HTMLElement);
+        const errorHtml = `<p class="error">${errorMsg}</p>`;
+        if (article && article !== container) {
+          article.innerHTML = errorHtml;
+        } else {
+          container.innerHTML = `<div class="help-content">${errorHtml}</div>`;
+        }
       }
     },
 

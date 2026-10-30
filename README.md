@@ -1,8 +1,8 @@
 ## Nigate
 
-**Language / 言語**: [English](README.md) | [日本語](README.ja.md) 
+**Language / 言語 / 语言**: [English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh-CN.md)
 
-![Main Interface](src/imgs/example/2026-01-21-10.51.01.png)
+![](https://cdn.jsdelivr.net/gh/hoochanlon/Free-NTFS-for-Mac@main/src/imgs/example/demo.gif)
 
 This is the Electron GUI version of Nigate, which provides a modern and intuitive interface for NTFS device management while retaining the original geek terminal version.[^1]
 
@@ -18,7 +18,7 @@ This is the Electron GUI version of Nigate, which provides a modern and intuitiv
 - ☕ **Prevent Sleep** - One-click toggle to prevent system sleep, ensuring the system stays awake during long operations
 - 🍃 **Status Protection** - Long press for 3s to toggle protection status. When protected, auto read-write, tray mode, and prevent sleep features will be disabled to prevent accidental operations
 - 🥷 **Ninja Tools** - Provide cross-filesystem mounting and end-to-end scripts from development to release, with one-click permission fixes and multi-language output to simplify complex operations and lower the usage barrier
-- 💻 **Arm & Intel Mac Support** - Full support for Apple Silicon (arm64) and Intel-based Macs (x64 architecture)
+- 💻 **Apple Silicon Support** - Built for Apple Silicon Macs (arm64)
 
 ### Important Notes
 
@@ -28,8 +28,8 @@ This is the Electron GUI version of Nigate, which provides a modern and intuitiv
 > [!important]
 > **Read-Write Notes**:
 >  - **Basic Operations**: Supports file copy, cut, delete, and rename (metadata-level operations)
->  - **Write Limitations (GUI Application)**: The GUI application (Electron GUI version) does not support direct in-place data modification on original files due to lack of kernel write permissions
->  - **Editing Recommendations**: Please use editors that support Atomic Write (such as VS Code / Kate). These tools save files by "creating new and replacing old files", thereby bypassing in-place overwrite limitations. Alternatively, we recommend copying files to your local Mac for editing, then copying them back
+>  - **Editing and Saving**: The GUI mounts NTFS volumes read-write with file ownership mapped to the current macOS user (`uid`/`gid`). Text and image editing and saving work in tested configurations, but compatibility may vary by editor and save operation
+>  - **If Saving Fails**: Keep a backup of important data. As a workaround, copy the file to your Mac, edit it locally, then copy it back. Editors that save through a temporary file and rename may help in some cases, but are not guaranteed to bypass every limitation
 >  - **Additional Note**: Ninja Tools `/ninja/kamui.sh` supports direct in-place data modification on original files, suitable for scenarios requiring direct file editing [^2]
 
 

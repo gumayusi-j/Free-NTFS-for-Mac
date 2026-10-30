@@ -6,10 +6,10 @@ import { SettingsManager } from '../utils/settings';
 
 export class SudoExecutor {
   // 使用密码执行 sudo 命令
-  async executeSudoWithPassword(args: string[], password: string): Promise<ExecResult> {
+  async executeSudoWithPassword(args: string[], password: string, timeoutMs: number = 30000): Promise<ExecResult> {
     return new Promise<ExecResult>((resolve, reject) => {
       // 验证密码不为空
-      if (!password || password.trim().length === 0) {
+      if (password.length === 0) {
         reject(new Error('密码不能为空'));
         return;
       }
@@ -75,7 +75,7 @@ export class SudoExecutor {
           childProcess.kill('SIGKILL');
         } catch {}
         reject(new Error('操作超时'));
-      }, 30000);
+      }, timeoutMs);
 
       childProcess.on('close', async (code: number | null) => {
         clearTimeout(timeout);
@@ -122,14 +122,14 @@ export class SudoExecutor {
 
           if (isPasswordError) {
             // 如果密码错误，删除保存的密码
-            const settings = await SettingsManager.getSettings();
-            if (settings.savePassword) {
-              try {
+            try {
+              const settings = await SettingsManager.getSettings();
+              if (settings.savePassword) {
                 await KeychainManager.deletePassword();
                 console.log('[SudoExecutor] 密码错误，已删除保存的密码');
-              } catch (error) {
-                console.warn('[SudoExecutor] 删除保存的密码失败:', error);
               }
+            } catch (error) {
+              console.warn('[SudoExecutor] 清理保存的密码失败:', error);
             }
             reject(new Error('密码错误，请重试'));
           } else {

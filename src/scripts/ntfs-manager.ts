@@ -52,8 +52,8 @@ class NTFSManager {
   }
 
   // 挂载设备
-  async mountDevice(device: NTFSDevice): Promise<string> {
-    return await this.mountOperations.mountDevice(device);
+  async mountDevice(device: NTFSDevice, passwordOverride?: string): Promise<string> {
+    return await this.mountOperations.mountDevice(device, passwordOverride);
   }
 
   // 卸载设备
@@ -71,6 +71,23 @@ class NTFSManager {
     return await this.mountOperations.resetDevice(device);
   }
 
+  // 修复 NTFS 文件系统，不应用重置操作的持久只读状态
+  async repairDevice(device: NTFSDevice): Promise<string> {
+    return await this.mountOperations.repairDevice(device);
+  }
+
+  async renameDevice(device: NTFSDevice, newName: string): Promise<string> {
+    const result = await this.mountOperations.renameDevice(device, newName);
+    this.deviceDetector.invalidateCache();
+    return result;
+  }
+
+  async formatDevice(device: NTFSDevice): Promise<string> {
+    const result = await this.mountOperations.formatDevice(device);
+    this.deviceDetector.invalidateCache();
+    return result;
+  }
+
   // 清理旧的挂载标记
   async cleanupOldMounts(): Promise<void> {
     return await this.mountOperations.cleanupOldMounts();
@@ -81,6 +98,8 @@ class NTFSManager {
     return await this.mountOperations.ejectDevice(device);
   }
 
+  private hybridDetectionStarted = false;
+
   // 启动混合检测（事件驱动 + 智能轮询备用）
   async startHybridDetection(callback: (devices: NTFSDevice[]) => void): Promise<void> {
     if (!this.hybridDetector) {
@@ -88,16 +107,13 @@ class NTFSManager {
     }
 
     this.deviceChangeCallbacks.add(callback);
+    if (this.hybridDetectionStarted) {
+      return;
+    }
 
+    this.hybridDetectionStarted = true;
     await this.hybridDetector.initialize((devices) => {
-      // 通知所有注册的回调
-      this.deviceChangeCallbacks.forEach(cb => {
-        try {
-          cb(devices);
-        } catch (error) {
-          console.error('设备变化回调执行失败:', error);
-        }
-      });
+      this.notifyDevicesChanged(devices);
     });
   }
 
@@ -107,11 +123,27 @@ class NTFSManager {
       this.hybridDetector.stop();
     }
     this.deviceChangeCallbacks.clear();
+    this.hybridDetectionStarted = false;
   }
 
   // 移除设备变化回调
   removeDeviceChangeCallback(callback: (devices: NTFSDevice[]) => void): void {
     this.deviceChangeCallbacks.delete(callback);
+  }
+
+  // 获取检测器当前持有的设备列表，不触发新的系统扫描
+  getCachedDevices(): NTFSDevice[] {
+    return this.hybridDetector?.getCurrentDevices() || this.deviceDetector.getLastDeviceList();
+  }
+
+  private notifyDevicesChanged(devices: NTFSDevice[]): void {
+    this.deviceChangeCallbacks.forEach(cb => {
+      try {
+        cb(devices);
+      } catch (error) {
+        console.error('设备变化回调执行失败:', error);
+      }
+    });
   }
 
   // 更新窗口可见性（用于优化轮询频率）

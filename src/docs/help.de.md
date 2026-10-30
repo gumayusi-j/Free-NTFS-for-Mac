@@ -1,9 +1,17 @@
-## Haftungsausschluss
+## Über Nigate
 
-Die Verwendung dieses Tools zum Einhängen und Ändern von NTFS-Geräten birgt das Risiko von Datenverlust. Es wird empfohlen, wichtige Daten vor der Verwendung zu sichern. Dieses Tool wird "wie besehen" ohne jegliche ausdrückliche oder stillschweigende Garantien bereitgestellt. Der Entwickler übernimmt keine Verantwortung für Datenverluste, die durch die Verwendung dieses Tools verursacht werden.
+**Nigate** ist ein kostenloses macOS-Werkzeug zum Lesen und Schreiben von NTFS-Speichergeräten auf Basis von ntfs-3g.
 
-> [!WARN]
-> Der stabile Betrieb und die Datenintegrität dieser Software hängen von der Leistung der Speichergeräte ab. Um Datenlese-/schreibfehler, Übertragungsunterbrechungen oder Geräteerkennungsfehler zu vermeiden, wird empfohlen, USB-Laufwerke zu verwenden, die aus hochwertigen Flash-Speicherchips hergestellt sind und eine zuverlässige Lese-/Schreibleistung aufweisen.
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> Autorenseite: [https://github.com/hoochanlon](https://github.com/hoochanlon)
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> Softwareprojekt: [https://github.com/hoochanlon/Free-NTFS-for-Mac](https://github.com/hoochanlon/Free-NTFS-for-Mac)
+- <img src="../imgs/svg/social/email.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> Kontakt-E-Mail: [hoochanlon@outlook.com](mailto:hoochanlon@outlook.com)
+
+> [!IMPORTANT]
+> **Haftungsausschluss**
+>
+> Die Verwendung dieses Tools zum Einhängen und Ändern von NTFS-Geräten birgt das Risiko von Datenverlust. Es wird empfohlen, wichtige Daten vor der Verwendung zu sichern. Dieses Tool wird "wie besehen" ohne jegliche ausdrückliche oder stillschweigende Garantien bereitgestellt. Der Entwickler übernimmt keine Verantwortung für Datenverluste, die durch die Verwendung dieses Tools verursacht werden.
+
+Der stabile Betrieb und die Datenintegrität dieser Software hängen von der Leistung der Speichergeräte ab. Um Datenlese-/schreibfehler, Übertragungsunterbrechungen oder Geräteerkennungsfehler zu vermeiden, wird empfohlen, USB-Laufwerke zu verwenden, die aus hochwertigen Flash-Speicherchips hergestellt sind und eine zuverlässige Lese-/Schreibleistung aufweisen.
 
 ## Systemanforderungen
 
@@ -46,6 +54,9 @@ Folgen Sie den Anweisungen, um die Installation abzuschließen. Wenn das Netzwer
 
 #### 3. MacFUSE installieren
 
+> [!TIP]
+> Apple-Silicon-Macs blockieren Kernel-Erweiterungen von Drittanbietern standardmäßig. Fahren Sie den Mac herunter und halten Sie die Ein-/Aus-Taste gedrückt, bis die Startoptionen erscheinen → Optionen → Fortfahren → Dienstprogramme → Startsicherheitsdienstprogramm. Wählen Sie das Systemvolume, öffnen Sie die Sicherheitsrichtlinie, wählen Sie „Reduzierte Sicherheit“ und aktivieren Sie „Verwaltung von Kernel-Erweiterungen von identifizierten Entwicklern durch Benutzer erlauben“.
+
 Führen Sie den folgenden Befehl im Terminal aus:
 
 ```bash
@@ -61,6 +72,9 @@ brew tap gromgit/homebrew-fuse
 brew install ntfs-3g-mac
 ```
 
+> [!TIP]
+> Nach der Installation von macFUSE und ntfs-3g wählen Sie in den Systemeinstellungen unter „Allgemein“ nacheinander „Anmeldeobjekte & Erweiterungen“ > „Erweiterungen“ > „Nach Kategorie“ > „Dateisystemerweiterungen“. Klicken Sie anschließend auf das Infosymbol und aktivieren Sie ntfs-3g (falls vorhanden) sowie macFUSE.
+
 **Hinweis**: Die Installationsreihenfolge ist wichtig. Bitte installieren Sie in der Reihenfolge: 1 → 2 → 3 → 4.
 
 ## Benutzeroberflächen-Symbole
@@ -69,12 +83,16 @@ Die Hauptoberfläche der Anwendung bietet mehrere Funktionssymbole, die Ihnen he
 
 ### Titelleisten-Symbole
 
-- <img src="../imgs/svg/devices/flash-auto.svg" alt="Automatisches Lese-Schreib" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Automatisches Lese-Schreib-Symbol** - Wenn aktiviert, werden neu eingefügte NTFS-Geräte automatisch im Lese-Schreib-Modus eingehängt. Das Symbol erscheint blau, wenn es aktiv ist.
+- <img src="../imgs/svg/devices/flash-auto.svg" alt="Automatisches Lesen/Schreiben" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Automatisches Lese-Schreib-Symbol** - Wenn aktiviert, hängt der Hintergrund neu angeschlossene schreibgeschützte NTFS-Volumes mit Schreibzugriff ein, auch ohne geöffnetes Fenster. Ein manuell auf Schreibschutz zurückgesetztes Volume bleibt für die aktuelle Verbindung unverändert. Aktiv erscheint das Symbol blau.
 - <img src="../imgs/svg/devices/tray.svg" alt="Systemleisten-Modus" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Systemleisten-Modus-Symbol** - Wenn aktiviert, wird die Anwendung beim Schließen des Fensters in die Systemleiste minimiert, anstatt beendet zu werden. Das Symbol erscheint rot, wenn es aktiv ist.
 - <img src="../imgs/svg/system/caffe.svg" alt="Ruhezustand verhindern" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Ruhezustand verhindern-Symbol** - Wenn aktiviert, verhindert das System, dass es in den Ruhezustand wechselt, um sicherzustellen, dass Geräte kontinuierlich verfügbar bleiben. Das Symbol erscheint kaffeefarben, wenn es aktiv ist.
 - <img src="../imgs/svg/system/protect.svg" alt="Status-Schutz" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Status-Schutz Symbol** - 3s lang drücken, um den Schutzstatus umzuschalten. Wenn geschützt, werden automatisches Lesen/Schreiben, Tray-Modus und Ruhezustand verhindern deaktiviert, um versehentliche Vorgänge zu verhindern. Das Symbol erscheint grün mit einer Pulsanimation, wenn es geschützt ist.
 - <img src="../imgs/svg/ui/info.svg" alt="Info" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Info-Symbol** - Öffnet das Info-Fenster, um Anwendungsinformationen und Projektlinks anzuzeigen.
 - <img src="../imgs/svg/actions/exit.svg" alt="Beenden" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Beenden-Symbol** - Beendet die Anwendung.
+
+### Symbol im Einstellungsbereich
+
+- 🤫 **Easter-Egg-Symbol** - Neben der Überschrift „Anwendungseinstellungen“. 3 Sekunden gedrückt halten, um die Hover-Tooltips für Symbolschaltflächen in der gesamten App umzuschalten; die Auswahl wird gespeichert.
 
 ### Registerkarten-Symbole
 
@@ -83,6 +101,13 @@ Die Hauptoberfläche der Anwendung bietet mehrere Funktionssymbole, die Ihnen he
 ### Geräteverwaltungs-Symbole
 
 - <img src="../imgs/svg/actions/refresh.svg" alt="Aktualisieren" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Aktualisieren-Symbol** - Aktualisiert die Geräteliste und erkennt angeschlossene NTFS-Geräte neu.
+- <img src="../imgs/svg/actions/format.svg" alt="Formatieren" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Formatieren-Symbol** - Baut die gesamte externe Festplatte als GPT-NTFS neu auf. Alle Partitionen und Daten auf dieser Festplatte werden gelöscht und können nicht wiederhergestellt werden. Das Symbol erscheint nur bei eingehängten externen Datenträgern.
+- <img src="../imgs/svg/actions/repair.svg" alt="Reparieren" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Reparatur-Symbol** - Klicken Sie beim gewünschten Gerät auf das Reparatur-Symbol und bestätigen Sie, um eine Reparatur des NTFS-Dateisystems zu versuchen. Dafür sind Administratorrechte und ein Passwort erforderlich. Fehler vom Typ "Resource busy" können automatisch behandelt werden.
+
+> [!tip]
+> <img src="../imgs/svg/actions/check-okey-done.svg" alt="Fertig" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Fertig-Symbol** - Nach erfolgreichem Formatieren oder Reparieren wechselt das entsprechende Symbol kurz zu diesem Abschlusszeichen und kehrt nach etwa 3 Sekunden zurück.
+
+**Hinweis: `ntfsfix` bietet nur begrenzte Reparaturmöglichkeiten und kann Windows `chkdsk /f` nicht ersetzen.**
 
 ## Verwendungsschritte
 
@@ -111,42 +136,32 @@ In der Hauptoberfläche und im Systemleisten-Menü wird für jedes Gerät ein Ka
 - **Gelb** (75-89%): Speicherplatz ist knapp, mit 11%-25% freiem Speicherplatz. Es wird empfohlen, Dateien zeitnah zu bereinigen
 - **Rot** (90-100%): Speicherplatz ist kritisch niedrig, mit weniger als 10% freiem Speicherplatz. Dateien sollten sofort bereinigt werden, um Speicherplatz freizugeben
 
-### Automatisches Lese-Schreib-Funktion
+### Automatisches Lesen/Schreiben
 
-Die automatische Lese-Schreib-Funktion ermöglicht es Ihnen, neu eingefügte NTFS-Geräte automatisch im Lese-Schreib-Modus einzuhängen, ohne manuelle Bedienung.
+Automatisches Lesen/Schreiben läuft im Hintergrund. Es hängt nicht davon ab, ob das Hauptfenster oder das Menüleistendienstprogramm geöffnet ist. Ist es aktiv, werden bei einer Geräteänderung geeignete schreibgeschützte NTFS-Volumes mit Lese- und Schreibzugriff eingehängt.
 
-**Aktivierungsmethoden：**
+**Aktivieren:**
 
-- Klicken Sie auf das automatische Lese-Schreib-Symbol (<img src="../imgs/svg/devices/flash-auto.svg" alt="Automatisches Lese-Schreib" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;">) in der Titelleiste. Das Symbol wird blau, wenn es aktiviert ist
-- Aktivieren Sie die Option "Automatisches Lese-Schreib" im Systemleisten-Menü
-- Schalten Sie die automatische Lese-Schreib-Schaltfläche in der Titelleiste der Hauptoberfläche um
+- Klicken Sie in der Titelleiste auf das Symbol für automatisches Lesen/Schreiben (<img src="../imgs/svg/devices/flash-auto.svg" alt="Automatisches Lesen/Schreiben" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;">). Aktiviert wird es blau
+- Aktivieren Sie „Automatisches Lesen/Schreiben“ im Menü der Menüleiste
 
-**Funktionsmerkmale：**
+**Wann eingehängt wird:**
 
-- **Automatische Erkennung neuer Geräte**：Wenn Sie ein neues NTFS-Gerät einstecken, erkennt die Anwendung es automatisch und hängt es im Lese-Schreib-Modus ein
-- **Intelligentes Überspringen manuell schreibgeschützter Geräte**：Wenn Sie ein Gerät manuell auf schreibgeschützt setzen, respektiert die automatische Lese-Schreib-Funktion Ihre Wahl und hängt es nicht erneut im Lese-Schreib-Modus ein
-- **Automatische Verarbeitung vorhandener Geräte bei Aktivierung**：Wenn Sie die automatische Lese-Schreib-Funktion aktivieren, prüft die Anwendung automatisch aktuell angeschlossene schreibgeschützte Geräte (außer denen, die Sie manuell auf schreibgeschützt gesetzt haben) und versucht, sie im Lese-Schreib-Modus einzuhängen
+- **Beim Einschalten**: verbundene Volumes, die noch schreibgeschützt und eingehängt sind, werden sofort geprüft
+- **Beim späteren Anschließen**: die nächste Geräteänderung prüft neu angeschlossene schreibgeschützte Volumes
+- Volumes mit bereits vorhandenem Schreibzugriff, nicht eingehängte Volumes und Volumes ohne nutzbares Volume werden übersprungen
 
-**Anwendungsfälle：**
+**Wann nicht eingehängt wird:**
 
-- Häufige Verwendung mehrerer NTFS-Geräte und automatisches Einhängen ohne manuelle Bedienung jedes Mal
-- Bei der Batch-Verarbeitung mehrerer Geräte können Sie die automatische Lese-Schreib-Funktion einmal aktivieren
-- Bei temporärem Bedarf an automatischem Einhängen können Sie es jederzeit ein- oder ausschalten
+- **Manuell schreibgeschützt**: Beim Zurücksetzen auf Schreibschutz oder vor einem Reset wird diese Wahl gespeichert. Solange das Volume verbunden bleibt, stellt automatisches Lesen/Schreiben den Schreibzugriff nicht wieder her
+- **Ein manuelles Einhängen mit Schreibzugriff löscht diese Wahl**
+- **Kurze Pause nach dem Schreibschutz**: Etwa 8 Sekunden nach Wiederherstellung oder Reset wird nicht sofort zurückgeschaltet
+- **Während einer Reparatur**: Automatisches Lesen/Schreiben pausiert für dieses Volume etwa 2 Minuten
+- **Ein Versuch je Änderung**: Dasselbe Volume wird je Geräteänderung nur einmal versucht. Ein Fehlschlag wird in diesem Durchgang nicht wiederholt; der nächste Anschluss oder das erneute Einschalten startet einen neuen Versuch
 
-**Hinweise：**
+**Nach dem Entfernen:**
 
-- Die automatische Lese-Schreib-Funktion erfordert Administratorrechte. Sie werden beim ersten Einhängen zur Eingabe eines Passworts aufgefordert
-- Wenn Sie ein Gerät manuell auf schreibgeschützt setzen, wird dieses Gerät zur Liste der "manuell schreibgeschützten Geräte" hinzugefügt, und die automatische Lese-Schreib-Funktion hängt es nicht erneut ein
-- Wenn Sie ein Gerät manuell im Lese-Schreib-Modus einhängen, wird dieses Gerät aus der Liste der "manuell schreibgeschützten Geräte" entfernt, und die automatische Lese-Schreib-Funktion kann danach normal darauf arbeiten
-- Die automatische Lese-Schreib-Funktion beeinflusst Ihre manuellen Operationen nicht. Sie können Geräte jederzeit manuell ein- oder aushängen
-
-**Status-Reset-Mechanismus：**
-
-Um die Intelligenz und Benutzerfreundlichkeit der automatischen Lese-Schreib-Funktion sicherzustellen, implementiert die Anwendung die folgenden Status-Reset-Mechanismen：
-
-- **Abkühlschutz**：Wenn Sie ein Gerät manuell auf schreibgeschützt setzen oder einen Reset-Vorgang ausführen, setzt das System eine 8-Sekunden-Abkühlphase. Während dieser Zeit wird die automatische Lese-Schreib-Funktion nicht ausgelöst, um zu verhindern, dass der gerade gesetzte Status sofort überschrieben wird
-- **Geräteentfernung-Reset**：Wenn ein Gerät entfernt wird und innerhalb von 8-9 Sekunden wieder eingesteckt wird, bleibt der manuelle schreibgeschützte Status erhalten. Wenn es nach mehr als 9 Sekunden wieder eingesteckt wird, wird das Gerät automatisch aus der Liste der "manuell schreibgeschützten Geräte" entfernt, stellt das Standardverhalten wieder her und ermöglicht die normale Verwendung der automatischen Lese-Schreib-Funktion
-- **Intelligente Bereinigung**：Das System bereinigt automatisch Abkühlungsaufzeichnungen und manuelle schreibgeschützte Status für entfernte Geräte, um sicherzustellen, dass Geräte nach dem Wiedereinstecken ordnungsgemäß funktionieren
+Die gespeicherte Schreibschutz-Wahl gilt nur für die aktuelle Verbindung. Nach dem Auswerfen oder Trennen für mehr als etwa 9 Sekunden wird sie gelöscht; beim nächsten Anschließen ist das Volume wieder geeignet. Erscheint es innerhalb von 9 Sekunden erneut, bleibt die Wahl erhalten, damit das kurze Aushängen beim Wiederherstellen des Schreibschutzes nicht als Entfernen gilt.
 
 ### Gerät als Lese-/Schreibzugriff einhängen
 
@@ -242,7 +257,7 @@ Wenn Sie auf `Error opening '/dev/diskXsX': Resource busy` stoßen, liegt dies n
 
 **Ursache**: Dieser Fehler tritt normalerweise auf, wenn ein Einhängvorgang zwangsweise unterbrochen wurde (z. B. durch erzwungenes Beenden der Anwendung, Systemabsturz usw.), wodurch das Gerät in einem belegten Zustand verbleibt. Sie müssen es zuerst aushängen und reparieren, bevor Sie es erneut einhängen können.
 
-**Verwenden der Reset-Schaltfläche**: Wenn Sie auf einen "Resource busy" Fehler stoßen, können Sie auch direkt auf die "Reset"-Schaltfläche in der Geräteliste klicken. Die Reset-Funktion führt automatisch die folgenden Operationen aus:
+**Verwenden der Reset-Schaltfläche**: Bei einem "Resource busy"-Fehler können Sie direkt auf die Reset-Schaltfläche klicken. Die Reset-Funktion führt automatisch folgende Operationen aus:
 - Gerät aushängen
 - Dateisystem reparieren
 - Gerätebelegungsstatus löschen
@@ -273,6 +288,38 @@ Wenn Sie während der Installation auf Probleme stoßen, prüfen Sie bitte Folge
    - Führen Sie `brew update` aus, um Homebrew zu aktualisieren
    - Prüfen Sie auf Berechtigungsprobleme
 
+### MacFUSE ist nach einem großen macOS-Upgrade zu alt
+
+Wenn diese Meldung erscheint, ist die installierte macFUSE-Version nicht mit der aktuell laufenden macOS-Version kompatibel:
+
+> The installed version of macFUSE is too old for the operating system. Please upgrade your macFUSE installation to one that is compatible with the currently running version of macOS.
+
+Gehen Sie wie folgt vor:
+
+1. **Apps aus allen Quellen erlauben**
+
+   Führen Sie im Terminal folgenden Befehl aus:
+
+   ```bash
+   sudo spctl --master-disable
+   ```
+
+   Wenn Terminal `Globally disabling the assessment system needs to be confirmed in System Settings.` meldet, öffnen Sie die Systemeinstellungen erneut und wählen Sie **Datenschutz & Sicherheit**. Suchen Sie unter **Sicherheit** nach **Apps aus folgenden Quellen erlauben** und wählen Sie **Überall**. Die Bezeichnungen können je nach macOS-Version abweichen.
+
+   > [!WARN]
+   > Dieser Befehl deaktiviert die Gatekeeper-Prüfung global und verringert die Systemsicherheit. Verwenden Sie ihn nur bei Bedarf. Nach dem Upgrade von macFUSE und der Freigabe der Systemerweiterung können Sie die Standardprüfung mit `sudo spctl --master-enable` wieder aktivieren.
+
+2. **macFUSE aktualisieren**
+
+   ```bash
+   brew upgrade --cask --greedy macfuse
+   ```
+
+3. **Systemerweiterung freigeben und neu starten**
+
+   Öffnen Sie **Systemeinstellungen → Datenschutz & Sicherheit**, geben Sie die macFUSE-Systemerweiterung frei und starten Sie den Mac wie aufgefordert neu.
+
+Wenn das Problem weiterhin besteht, konsultieren Sie bitte die offizielle Dokumentation der einzelnen Abhängigkeiten oder suchen Sie technischen Support.
 Wenn das Problem weiterhin besteht, konsultieren Sie bitte die offizielle Dokumentation der einzelnen Abhängigkeiten oder suchen Sie technischen Support.
 
 ### Kann nach dem Aushängen nicht auf das Gerät zugegriffen werden?
@@ -285,7 +332,8 @@ Im Tab "Betriebsprotokolle" können Sie Aufzeichnungen aller Vorgänge anzeigen,
 
 - Abhängigkeitsprüfungsergebnisse
 - Geräteerkennungsstatus
-- Einhänge-/Aushängevorgangsergebnisse
+- Ein-, Aushänge- und Auswurfvorgänge
+- Reparatur-, Umbenennungs- und Formatierungsvorgänge
 - Fehlermeldungen und Warnungen
 
 **Betriebsprotokolle aktivieren:**

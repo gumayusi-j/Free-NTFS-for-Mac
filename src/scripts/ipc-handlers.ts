@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow, type IpcMainInvokeEvent } from 'electron';
+import { ipcMain, dialog, shell, BrowserWindow, nativeTheme, type IpcMainInvokeEvent } from 'electron';
 import ntfsManager from './ntfs-manager';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -11,7 +11,11 @@ import {
   mainWindow,
   showMainWindowAndCloseTray,
   adjustTrayWindowHeightByDeviceCount,
-  trayDevicesWindow
+  trayDevicesWindow,
+  prerenderTrayDevicesTheme,
+  syncHiddenTrayDevicesWindow,
+  ensureTrayDevicesWindow,
+  type PendingMainWindowAction
 } from './window-manager';
 import { openAboutWindow, getAboutWindow } from './about-window';
 import { SettingsManager, AppSettings } from './utils/settings';
@@ -20,6 +24,7 @@ import { KeychainManager } from './utils/keychain';
 import { rebuildApplicationMenu } from './app-config';
 import { initTray, destroyTray, updateTrayMenu, updateTrayTooltip, isTrayInitialized } from './utils/tray-manager';
 import { caffeinateManager } from './utils/caffeinate-manager';
+import { openDependencyInstaller } from './ntfs-manager/dep-auto-installer';
 
 let quitWindow: BrowserWindow | null = null;
 
@@ -35,6 +40,82 @@ let currentDockHiddenState: boolean | null = null;
 const MANUAL_GRACE_MS = 9 * 1000; // 9 秒宽限
 const manualLastSeen = new Map<string, number>();
 let manualPruneTimer: NodeJS.Timeout | null = null;
+
+// 自动读写运行在主进程，不依赖任何窗口是否打开或是否完成刷新。
+const autoMountAttempted = new Map<string, number>();
+const autoMountCooldownUntil = new Map<string, number>();
+const autoMountInProgress = new Set<string>();
+const AUTO_MOUNT_ATTEMPT_TTL_MS = 20000;
+const AUTO_MOUNT_COOLDOWN_MS = 8000;
+
+function autoMountIdentity(device: { disk?: string; volumeUuid?: string }): string {
+  return device.volumeUuid || device.disk || '';
+}
+
+function pruneAutoMountState(devices: Array<{ disk?: string; volumeUuid?: string }>): void {
+  const online = new Set(
+    devices.flatMap(device => [device.disk, device.volumeUuid].filter((id): id is string => Boolean(id)))
+  );
+  const now = Date.now();
+  for (const [id, attemptedAt] of autoMountAttempted) {
+    if (!online.has(id) || now - attemptedAt > AUTO_MOUNT_ATTEMPT_TTL_MS) {
+      autoMountAttempted.delete(id);
+    }
+  }
+  for (const [id, until] of autoMountCooldownUntil) {
+    if (!online.has(id) || until <= now) {
+      autoMountCooldownUntil.delete(id);
+    }
+  }
+}
+
+function suppressAutoMount(device: { disk?: string; volumeUuid?: string }, durationMs: number): void {
+  const until = Date.now() + durationMs;
+  if (device.disk) autoMountCooldownUntil.set(device.disk, until);
+  if (device.volumeUuid) autoMountCooldownUntil.set(device.volumeUuid, until);
+}
+
+function clearAutoMountAttempt(device: { disk?: string; volumeUuid?: string }): void {
+  const identity = autoMountIdentity(device);
+  if (identity) autoMountAttempted.delete(identity);
+  if (device.disk) autoMountAttempted.delete(device.disk);
+  if (device.volumeUuid) autoMountAttempted.delete(device.volumeUuid);
+}
+
+async function autoMountEligibleDevices(devices: any[], explicit = false): Promise<void> {
+  pruneAutoMountState(devices);
+  const settings = await SettingsManager.getSettings();
+  if (!settings.autoMount) return;
+
+  const manuallyReadOnly = new Set(settings.manuallyReadOnlyDevices || []);
+  const now = Date.now();
+
+  for (const device of devices) {
+    const identity = autoMountIdentity(device);
+    if (!identity || !device?.isReadOnly || device?.isUnmounted || !device?.volume) continue;
+    if (manuallyReadOnly.has(identity) || (device.disk && manuallyReadOnly.has(device.disk))) continue;
+    if ((autoMountCooldownUntil.get(identity) || 0) > now) continue;
+    if (device.disk && (autoMountCooldownUntil.get(device.disk) || 0) > now) continue;
+    if (autoMountInProgress.has(identity)) continue;
+    if (!explicit && autoMountAttempted.has(identity)) continue;
+
+    autoMountAttempted.set(identity, now);
+    if (device.disk) autoMountAttempted.set(device.disk, now);
+    autoMountInProgress.add(identity);
+    console.log(`[自动读写] ${explicit ? '立即挂载当前设备' : '挂载新接入设备'}: ${device.volumeName} (${identity})`);
+
+    ntfsManager.mountDevice(device)
+      .then(result => {
+        console.log(`[自动读写] ${device.volumeName} 配置成功: ${result}`);
+        clearAutoMountAttempt(device);
+      })
+      .catch(error => {
+        console.error(`[自动读写] ${device.volumeName} 配置失败:`, error);
+        clearAutoMountAttempt(device);
+      })
+      .finally(() => autoMountInProgress.delete(identity));
+  }
+}
 async function pruneManuallyReadOnlyDevices(devices?: Array<{ disk: string; volumeUuid?: string }>): Promise<void> {
   try {
     const settings = await SettingsManager.getSettings();
@@ -117,7 +198,7 @@ async function broadcastDevicesToAllWindows(): Promise<void> {
     console.log(`[设备广播] 向 ${allWindows.length} 个窗口广播最新设备列表，设备数量:`, devices.length);
 
     allWindows.forEach((win, index) => {
-      if (!win.isDestroyed()) {
+      if (!win.isDestroyed() && win !== trayDevicesWindow) {
         try {
           win.webContents.send('hybrid-detection-device-change', devices);
           console.log(`[设备广播] 已发送设备列表到窗口 ${index + 1}`);
@@ -126,6 +207,8 @@ async function broadcastDevicesToAllWindows(): Promise<void> {
         }
       }
     });
+    // 托盘窗口打开时也走这条同步，不再因为可见而跳过。
+    await syncHiddenTrayDevicesWindow(devices);
   } catch (error) {
     console.error('[设备广播] 获取或广播设备列表失败:', error);
   }
@@ -133,12 +216,24 @@ async function broadcastDevicesToAllWindows(): Promise<void> {
 
 // NTFS 相关 IPC handlers
 export function setupNTFSHandlers(): void {
+  ipcMain.handle('run-device-action-in-main-window', async (_event: IpcMainInvokeEvent, pendingAction: PendingMainWindowAction) => {
+    await showMainWindowAndCloseTray(ntfsManager.getCachedDevices(), pendingAction);
+  });
+
   ipcMain.handle('check-dependencies', async () => {
     return await ntfsManager.checkDependencies();
   });
 
+  ipcMain.handle('open-dependency-installer', async () => {
+    return await openDependencyInstaller();
+  });
+
   ipcMain.handle('get-ntfs-devices', async (event: IpcMainInvokeEvent, forceRefresh: boolean = false) => {
     return await ntfsManager.getNTFSDevices(forceRefresh);
+  });
+
+  ipcMain.handle('get-cached-ntfs-devices', async () => {
+    return ntfsManager.getCachedDevices();
   });
 
   ipcMain.handle('mount-device', async (event: IpcMainInvokeEvent, device: any) => {
@@ -215,6 +310,7 @@ export function setupNTFSHandlers(): void {
         if (manualId && !manuallyReadOnlyDevices.includes(manualId)) {
           manuallyReadOnlyDevices.push(manualId);
           await SettingsManager.saveSettings({ manuallyReadOnlyDevices });
+          suppressAutoMount(device, AUTO_MOUNT_COOLDOWN_MS);
           console.log(`[IPC] 已将设备 ${device.volumeName} (${manualId}) 添加到手动只读列表（重置操作前），当前列表:`, manuallyReadOnlyDevices);
         } else {
           console.log(`[IPC] 设备 ${device.volumeName} (${manualId}) 已在手动只读列表中`);
@@ -246,6 +342,147 @@ export function setupNTFSHandlers(): void {
     }
   });
 
+  ipcMain.handle('repair-device', async (_event: IpcMainInvokeEvent, device: any) => {
+    try {
+      const devices = await ntfsManager.getNTFSDevices(true);
+      const currentDevice = devices.find(candidate =>
+        candidate.disk === device?.disk && candidate.devicePath === device?.devicePath
+      );
+      if (!currentDevice) {
+        throw new Error('REPAIR_DEVICE_UNAVAILABLE');
+      }
+
+      const cooldownUntil = Date.now() + 120000;
+      suppressAutoMount(currentDevice, 120000);
+      BrowserWindow.getAllWindows().forEach(win => {
+        if (!win.isDestroyed()) {
+          win.webContents.send('device-auto-mount-cooldown', {
+            disk: currentDevice.disk,
+            volumeUuid: currentDevice.volumeUuid,
+            until: cooldownUntil
+          });
+        }
+      });
+
+      const result = await ntfsManager.repairDevice(currentDevice);
+      setTimeout(() => {
+        updateTrayMenu(true);
+      }, 500);
+      setTimeout(() => {
+        broadcastDevicesToAllWindows().catch(err => {
+          console.warn('[repair-device] 广播设备列表失败:', err);
+        });
+      }, 700);
+      return { success: true, result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setTimeout(() => {
+        updateTrayMenu(true);
+      }, 300);
+      setTimeout(() => {
+        broadcastDevicesToAllWindows().catch(err => {
+          console.warn('[repair-device] 广播设备列表失败:', err);
+        });
+      }, 700);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle('rename-device', async (_event: IpcMainInvokeEvent, device: any, newName: string) => {
+    try {
+      const devices = await ntfsManager.getNTFSDevices(true);
+      const currentDevice = devices.find(candidate =>
+        candidate.disk === device?.disk && candidate.devicePath === device?.devicePath
+      );
+      if (!currentDevice) {
+        throw new Error('RENAME_DEVICE_UNAVAILABLE');
+      }
+
+      const cooldownUntil = Date.now() + 120000;
+      suppressAutoMount(currentDevice, 120000);
+      BrowserWindow.getAllWindows().forEach(win => {
+        if (!win.isDestroyed()) {
+          win.webContents.send('device-auto-mount-cooldown', {
+            disk: currentDevice.disk,
+            volumeUuid: currentDevice.volumeUuid,
+            until: cooldownUntil
+          });
+        }
+      });
+
+      const result = await ntfsManager.renameDevice(currentDevice, newName);
+      setTimeout(() => {
+        updateTrayMenu(true);
+      }, 500);
+      setTimeout(() => {
+        broadcastDevicesToAllWindows().catch(err => {
+          console.warn('[rename-device] 广播设备列表失败:', err);
+        });
+      }, 700);
+      return { success: true, result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setTimeout(() => {
+        updateTrayMenu(true);
+      }, 300);
+      setTimeout(() => {
+        broadcastDevicesToAllWindows().catch(err => {
+          console.warn('[rename-device] 广播设备列表失败:', err);
+        });
+      }, 700);
+      return { success: false, error: errorMessage };
+    }
+  });
+
+  ipcMain.handle('format-device', async (_event: IpcMainInvokeEvent, device: any) => {
+    try {
+      const devices = await ntfsManager.getNTFSDevices(true);
+      const currentDevice = devices.find(candidate =>
+        candidate.disk === device?.disk && candidate.devicePath === device?.devicePath
+      );
+      if (!currentDevice) {
+        throw new Error('FORMAT_DEVICE_UNAVAILABLE');
+      }
+      if (currentDevice.isUnmounted) {
+        throw new Error('FORMAT_NOT_MOUNTED');
+      }
+
+      const cooldownUntil = Date.now() + 120000;
+      suppressAutoMount(currentDevice, 120000);
+      BrowserWindow.getAllWindows().forEach(win => {
+        if (!win.isDestroyed()) {
+          win.webContents.send('device-auto-mount-cooldown', {
+            disk: currentDevice.disk,
+            volumeUuid: currentDevice.volumeUuid,
+            until: cooldownUntil
+          });
+        }
+      });
+
+      const result = await ntfsManager.formatDevice(currentDevice);
+      setTimeout(() => {
+        updateTrayMenu(true);
+      }, 500);
+      setTimeout(() => {
+        broadcastDevicesToAllWindows().catch(err => {
+          console.warn('[format-device] 广播设备列表失败:', err);
+        });
+      }, 700);
+      return { success: true, result };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setTimeout(() => {
+        updateTrayMenu(true);
+      }, 300);
+      setTimeout(() => {
+        broadcastDevicesToAllWindows().catch(err => {
+          console.warn('[format-device] 广播设备列表失败:', err);
+        });
+      }, 700);
+      return { success: false, error: errorMessage };
+    }
+  });
+
   ipcMain.handle('restore-to-readonly', async (event: IpcMainInvokeEvent, device: any) => {
     try {
       // 在还原为只读之前，先将设备添加到手动只读列表，防止自动读写功能立即将其设置为读写
@@ -258,6 +495,7 @@ export function setupNTFSHandlers(): void {
         if (manualId && !manuallyReadOnlyDevices.includes(manualId)) {
           manuallyReadOnlyDevices.push(manualId);
           await SettingsManager.saveSettings({ manuallyReadOnlyDevices });
+          suppressAutoMount(device, AUTO_MOUNT_COOLDOWN_MS);
           console.log(`[IPC] 已将设备 ${device.volumeName} (${manualId}) 添加到手动只读列表（操作前），当前列表:`, manuallyReadOnlyDevices);
         } else {
           console.log(`[IPC] 设备 ${device.volumeName} (${manualId}) 已在手动只读列表中`);
@@ -322,13 +560,19 @@ export function setupNTFSHandlers(): void {
       if (!hybridDetectionInitialized) {
         await ntfsManager.startHybridDetection((devices) => {
           // 设备变化时清理陈旧的“手动只读”列表，避免 disk 复用导致误判
-          pruneManuallyReadOnlyDevices(devices as any).catch(() => {});
+          pruneManuallyReadOnlyDevices(devices as any)
+            .catch(() => {})
+            .finally(() => {
+              autoMountEligibleDevices(devices as any[]).catch(error => {
+                console.error('[自动读写] 处理设备变化失败:', error);
+              });
+            });
           // 通过事件通知所有窗口（包括已打开的托盘窗口）
           const allWindows = BrowserWindow.getAllWindows();
           console.log(`[混合检测] 设备变化，通知 ${allWindows.length} 个窗口，设备数量:`, devices.length);
 
           allWindows.forEach((win, index) => {
-            if (!win.isDestroyed()) {
+            if (!win.isDestroyed() && win !== trayDevicesWindow) {
               try {
                 win.webContents.send('hybrid-detection-device-change', devices);
                 console.log(`[混合检测] 已发送事件到窗口 ${index + 1}`);
@@ -338,9 +582,13 @@ export function setupNTFSHandlers(): void {
               }
             }
           });
+          // 托盘窗口不走这条广播：隐藏时需要离屏预渲染，打开时直接套用同一份快照。
+          void syncHiddenTrayDevicesWindow(devices);
         });
         hybridDetectionInitialized = true;
         console.log('✅ [混合检测] 全局检测已启动');
+        // 监听建立后再创建托盘窗口，避免窗口抢在首次扫描前拿到空缓存。
+        void ensureTrayDevicesWindow();
       } else {
         // 如果已经初始化，立即发送当前设备列表给新窗口
         const currentDevices = await ntfsManager.getNTFSDevices(true);
@@ -514,6 +762,67 @@ export function setupNTFSHandlers(): void {
 
 // 窗口相关 IPC handlers
 export function setupWindowHandlers(): void {
+  ipcMain.handle('get-app-version', () => app.getVersion());
+
+  ipcMain.handle('check-for-updates', async () => {
+    const currentVersion = app.getVersion();
+    const releaseUrl = 'https://github.com/hoochanlon/Free-NTFS-for-Mac/releases/latest';
+
+    // 兼容 v1.5.0、v.1.5.0、V 1.5.0 等发布标签写法
+    const normalizeVersion = (version: string) => version.trim().replace(/^[vV][\s.]*/, '');
+    const parseVersion = (version: string) => {
+      const match = normalizeVersion(version).match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
+      return match ? match.slice(1).map(Number) : null;
+    };
+
+    try {
+      const response = await fetch('https://api.github.com/repos/hoochanlon/Free-NTFS-for-Mac/releases/latest', {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'Nigate-Update-Checker'
+        },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) {
+        const error = new Error(`GitHub API returned ${response.status}`);
+        error.name = 'NetworkError';
+        throw error;
+      }
+
+      const release = await response.json() as { tag_name?: string; draft?: boolean; prerelease?: boolean };
+      const latestVersion = release.tag_name ? normalizeVersion(release.tag_name) : undefined;
+      const currentParts = parseVersion(currentVersion);
+      const latestParts = latestVersion ? parseVersion(latestVersion) : null;
+
+      if (!latestVersion || !latestParts || !currentParts || release.draft || release.prerelease) {
+        throw new Error('Invalid or unsupported release version');
+      }
+
+      let versionComparison = 0;
+      for (let index = 0; index < latestParts.length; index++) {
+        if (latestParts[index] !== currentParts[index]) {
+          versionComparison = latestParts[index] > currentParts[index] ? 1 : -1;
+          break;
+        }
+      }
+
+      return {
+        success: true,
+        currentVersion,
+        latestVersion,
+        updateAvailable: versionComparison > 0,
+        currentAhead: versionComparison < 0,
+        releaseUrl
+      };
+    } catch (error) {
+      const reason = error instanceof TypeError || (
+        error instanceof Error && ['TimeoutError', 'AbortError', 'NetworkError'].includes(error.name)
+      ) ? 'network' : 'invalid';
+      console.error('[Update] 检查更新失败:', error);
+      return { success: false, reason, currentVersion, releaseUrl };
+    }
+  });
+
   ipcMain.handle('open-logs-window', async () => {
     await createLogsWindow();
   });
@@ -602,7 +911,7 @@ export function setupWindowHandlers(): void {
   });
 
   ipcMain.handle('show-main-window', async () => {
-    await showMainWindowAndCloseTray();
+    await showMainWindowAndCloseTray(ntfsManager.getCachedDevices());
   });
 
   // 根据设备数量调整托盘窗口高度
@@ -659,33 +968,43 @@ export function setupSystemHandlers(): void {
         return theme;
       } catch (error) {
         console.error('获取当前主题失败:', error);
-        return 'dark';
+        return 'light';
       }
     }
-    return 'dark';
+    return 'light';
   });
 
   ipcMain.handle('broadcast-theme-change', async (event: IpcMainInvokeEvent, isLightMode: boolean) => {
+    const theme = isLightMode ? 'light' : 'dark';
+    const backgroundColor = theme === 'light' ? '#ffffff' : '#1d1d1f';
+    nativeTheme.themeSource = theme;
     const allWindows = BrowserWindow.getAllWindows();
-    const backgroundColor = isLightMode ? '#ffffff' : '#1e1e1e';
-    allWindows.forEach((window: BrowserWindow) => {
-      if (window && !window.isDestroyed()) {
-        window.webContents.send('theme-changed', isLightMode);
-        // 更新所有模块窗口和托盘设备窗口的背景色
-        const aboutWindow = getAboutWindow();
-        if (window === aboutWindow) {
-          const aboutBgColor = isLightMode ? '#f5f5f7' : '#1d1d1f';
-          window.setBackgroundColor(aboutBgColor);
-        } else {
-          // 检查是否是模块窗口或托盘设备窗口
-          // 这些窗口使用devices.html或dependencies.html
-          const url = window.webContents.getURL();
-          if (url && (url.includes('devices.html') || url.includes('dependencies.html'))) {
-            window.setBackgroundColor(backgroundColor);
-          }
+    for (const window of allWindows) {
+      if (!window || window.isDestroyed()) continue;
+      window.webContents.send('theme-changed', isLightMode);
+      const aboutWindow = getAboutWindow();
+      if (window === aboutWindow) {
+        window.setBackgroundColor(isLightMode ? '#f5f5f7' : '#1d1d1f');
+      } else {
+        const url = window.webContents.getURL();
+        if (url && (url.includes('devices.html') || url.includes('dependencies.html'))) {
+          window.setBackgroundColor(backgroundColor);
         }
       }
-    });
+      if (window === trayDevicesWindow) {
+        await window.webContents.executeJavaScript(`
+          document.documentElement.classList.add('tray-theme-syncing');
+          document.documentElement.classList.toggle('light-theme', ${isLightMode});
+          if (document.body) document.body.classList.toggle('light-theme', ${isLightMode});
+          try { localStorage.setItem('app-theme', ${isLightMode} ? 'light' : 'dark'); } catch (e) {}
+          void document.documentElement.offsetHeight;
+          document.documentElement.classList.remove('tray-theme-syncing');
+        `).catch(() => {});
+        window.setBackgroundColor(backgroundColor);
+        // 隐藏窗口的合成层不会跟着 class 更新，必须现在画完新主题
+        await prerenderTrayDevicesTheme(theme);
+      }
+    }
   });
 
   // 退出应用
@@ -828,6 +1147,18 @@ export function setupSettingsHandlers(): void {
     return { success: true };
   });
 
+  ipcMain.handle('apply-auto-mount', async () => {
+    try {
+      const devices = await ntfsManager.getNTFSDevices(true);
+      await autoMountEligibleDevices(devices as any[], true);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[自动读写] 立即应用失败:', errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  });
+
   // 检查是否有保存的密码
   ipcMain.handle('has-saved-password', async () => {
     return await KeychainManager.hasPassword();
@@ -910,4 +1241,12 @@ export function setupIpcHandlers(): void {
   setupSystemHandlers();
   setupSettingsHandlers();
   setupCaffeinateHandlers();
+
+  // 启动期即建立设备监听。自动读写不再等待窗口渲染器注册回调。
+  // 监听就绪后再预创建托盘窗口，后续插拔才能在打开前完成预渲染。
+  ntfsManager.startHybridDetection(() => {}).then(() => {
+    void ensureTrayDevicesWindow();
+  }).catch(error => {
+    console.error('[自动读写] 启动设备监听失败:', error);
+  });
 }

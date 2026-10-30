@@ -80,7 +80,6 @@
   overflow hidden
   display none
   padding 0
-  animation fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)
   min-height 0
 
   &.active
@@ -124,13 +123,41 @@
           font-size 15px
           font-weight 500
 
-  // 指南手册标签页需要滚动
+        .header-actions
+          display flex
+          gap 8px
+          align-items center
+          flex-wrap nowrap
+
+          .btn
+            display inline-flex
+            align-items center
+            justify-content center
+            height 30px
+            padding 6px 16px
+            line-height 1
+            box-sizing border-box
+            white-space nowrap
+
+        #autoInstallDepsBtn
+          gap 6px
+
+          .btn-icon
+            width 14px
+            height 14px
+            display block
+            flex-shrink 0
+
+  // 指南手册标签页：内部自己滚动
   &#helpTab
-    overflow-y auto
-    overflow-x hidden
-    // 确保在小尺寸时也能正常显示
+    overflow hidden
     min-width 0
     padding 0
+    position relative
+
+    &.active
+      display flex
+      flex-direction column
 
   // 操作日志标签页需要滚动
   &#logsTab
@@ -216,14 +243,19 @@
 .help-content
   max-width 800px
   margin 0 auto
-  padding 0 20px 24px 20px
+  padding 12px 20px 48px 20px
   font-size 14px
   line-height 1.7
   color var(--text-primary)
-  // 确保在小尺寸时也能正常显示
   min-width 0
   word-wrap break-word
   overflow-wrap break-word
+  user-select text
+  -webkit-user-select text
+  cursor text
+
+  h2, h3, h4
+    scroll-margin-top 12px
 
   // 适配最小尺寸
   @media (max-width: 600px)

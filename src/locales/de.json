@@ -18,6 +18,13 @@
     "quit": "Beenden",
     "file": "Ablage",
     "close": "Schließen",
+    "edit": "Bearbeiten",
+    "undo": "Widerrufen",
+    "redo": "Wiederholen",
+    "cut": "Ausschneiden",
+    "copy": "Kopieren",
+    "paste": "Einsetzen",
+    "selectAll": "Alles auswählen",
     "view": "Ansicht",
     "reload": "Neu laden",
     "forceReload": "Erzwingen neu laden",
@@ -53,6 +60,10 @@
   "dependencies": {
     "title": "Systemabhängigkeiten",
     "checkButton": "Abhängigkeiten prüfen",
+    "autoInstall": "Ein-Klick-Installation",
+    "autoInstallTitle": "Fehlende Abhängigkeiten nacheinander im Terminal installieren",
+    "autoInstallOpened": "Terminal geöffnet. Nach dem aktuellen Schritt folgt automatisch der nächste. Am Ende erscheint „All steps completed“.",
+    "autoInstallFailed": "Terminal konnte nicht geöffnet werden: {error}",
     "checking": "Wird geprüft...",
     "installed": "Installiert",
     "installedOptional": "Installiert (Optional)",
@@ -76,17 +87,25 @@
     "brew": {
       "name": "Homebrew",
       "description": "Paketmanager für macOS, zum Installieren und Verwalten von Softwarepaketen",
-      "installGuide": "Führen Sie den obigen Befehl im Terminal aus und folgen Sie den Anweisungen, um die Installation abzuschließen. Wenn das Netzwerk langsam ist, können Sie eine inländische Spiegelquelle verwenden."
+      "installGuide": "Führen Sie den obigen Befehl im Terminal aus und folgen Sie den Anweisungen. Bei langsamer Netzwerkverbindung können Sie den unten stehenden Installationsbefehl über den China-Mirror verwenden.",
+      "installGuideMirrorCommandLabel": "Installationsbefehl über den China-Mirror:"
     },
     "macfuse": {
       "name": "MacFUSE",
-      "description": "Dateisystem-Benutzerraum-Framework, erforderlich für ntfs-3g",
-      "installGuide": "Homebrew muss zuerst installiert sein. Führen Sie den obigen Befehl im Terminal aus, um zu installieren."
+      "description": "Dateisystem-Benutzerraum-Framework, erforderlich für ntfs-3g.",
+      "installGuide": "Tipp für Apple Silicon: Kernel-Erweiterungen von Drittanbietern werden standardmäßig blockiert. Fahren Sie den Mac herunter und halten Sie die Ein-/Aus-Taste gedrückt, bis die Startoptionen erscheinen → Optionen → Fortfahren → Dienstprogramme → Startsicherheitsdienstprogramm. Wählen Sie das Systemvolume, öffnen Sie die Sicherheitsrichtlinie, wählen Sie „Reduzierte Sicherheit“ und aktivieren Sie „Verwaltung von Kernel-Erweiterungen von identifizierten Entwicklern durch Benutzer erlauben“.",
+      "installGuide2": "Wenn nach einem macOS-Upgrade die Meldung „The installed version of macFUSE is too old for the operating system“ erscheint, folgen Sie diesen Schritten.",
+      "installGuide2Step1": "Führen Sie diesen Befehl im Terminal aus und aktivieren Sie danach unter Systemeinstellungen > Datenschutz & Sicherheit die Option „Von überall“:",
+      "installGuide2Command1": "sudo spctl --master-disable",
+      "installGuide2Step2": "Führen Sie diesen Befehl im Terminal aus, um MacFUSE zu aktualisieren:",
+      "installGuide2Command2": "brew upgrade --cask --greedy macfuse",
+      "installGuide2Step3": "Erlauben Sie die macFUSE-Erweiterung unter Datenschutz & Sicherheit und starten Sie den Mac neu."
     },
     "ntfs3g": {
       "name": "ntfs-3g",
       "description": "NTFS-Dateisystemtreiber, der NTFS-Lese-/Schreibunterstützung bereitstellt",
-      "installGuide": "Homebrew und MacFUSE müssen zuerst installiert sein. Führen Sie den obigen Befehl im Terminal aus, um zu installieren."
+      "installGuide": "Homebrew und MacFUSE müssen zuerst installiert sein. Führen Sie den obigen Befehl im Terminal aus, um zu installieren.",
+      "installGuideTip": "Nach der Installation von macFUSE und ntfs-3g wählen Sie in den Systemeinstellungen unter „Allgemein“ nacheinander „Anmeldeobjekte & Erweiterungen“ > „Erweiterungen“ > „Nach Kategorie“ > „Dateisystemerweiterungen“. Klicken Sie anschließend auf das Infosymbol und aktivieren Sie ntfs-3g (falls vorhanden) sowie macFUSE."
     },
     "fswatch": {
       "name": "fswatch (Optional)",
@@ -114,6 +133,20 @@
     "remount": "Erneut R/W",
     "reset": "Zurücksetzen",
     "resetTooltip": "Gerät zurücksetzen (aushängen und reparieren, zur Behebung von Resource busy Fehlern)",
+    "repair": "Reparieren",
+    "repairTooltip": "Reparieren",
+    "repairConfirm": "NTFS-Partition reparieren?",
+    "repairConfirmNote": "ntfsfix kann nur grundlegende Probleme beheben und Windows chkdsk nicht ersetzen. Die Reparatur kann zu Datenverlust führen.",
+    "targetDevice": "Zielgerät: {name}",
+    "rename": "Umbenennen",
+    "renameTooltip": "Umbenennen",
+    "renameTitle": "Umbenennen",
+    "renameNote": "Hinweis:\n1. Benennen Sie das Volume nicht um, während Dateien übertragen werden — das kann die Übertragung unterbrechen oder die Bezeichnung beschädigen\n2. Nach der Bestätigung wird der neue Name geschrieben, danach wird das Volume automatisch ausgehängt und erneut eingehängt",
+    "renamePlaceholder": "Neuen Volumenamen eingeben",
+    "format": "Formatieren",
+    "formatTooltip": "Formatieren",
+    "formatConfirm": "Dieser Vorgang löscht alle Partitionen und Daten der gesamten Festplatte!",
+    "formatConfirmNote": "1. Der Vorgang kann nicht rückgängig gemacht werden. Sichern Sie wichtige Daten zuerst.\n2. Das Formatieren kann länger dauern und hängt das Volume dabei mehrfach aus und wieder ein.\n3. Trennen Sie das Gerät nicht und unterbrechen Sie den Vorgang nicht. Bitte warten Sie, bis er abgeschlossen ist.\nFortfahren?",
     "unmount": "Aushängen",
     "eject": "Auswerfen",
     "restoreReadOnly": "Nur lesen",
@@ -144,6 +177,7 @@
   "dialog": {
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
+    "continue": "Fortfahren",
     "ok": "OK"
   },
   "logs": {
@@ -173,6 +207,15 @@
     "loading": "Laden...",
     "loadError": "Laden fehlgeschlagen: {error}",
     "unknownError": "Unbekannter Fehler",
+    "toc": "Inhalt",
+    "toggleToc": "Inhalt ein- oder ausblenden",
+    "toggleSearch": "Suche ein- oder ausblenden",
+    "searchPlaceholder": "Anleitung durchsuchen...",
+    "searchNoResult": "Keine Treffer",
+    "searchCount": "{current}/{total}",
+    "searchPrev": "Vorheriges",
+    "searchNext": "Nächstes",
+    "backToTop": "Nach oben {percent}%",
     "icons": {
       "title": "Benutzeroberflächen-Symbole",
       "intro": "Die Hauptoberfläche der Anwendung bietet mehrere Funktionssymbole, die Ihnen helfen, schnell auf häufig verwendete Funktionen zuzugreifen:",
@@ -180,7 +223,7 @@
         "title": "Titelleisten-Symbole",
         "autoMount": {
           "name": "Automatisches Lese-Schreib-Symbol",
-          "description": "Wenn aktiviert, werden neu eingefügte NTFS-Geräte automatisch im Lese-Schreib-Modus eingehängt. Das Symbol erscheint blau, wenn es aktiv ist."
+          "description": "Wenn aktiviert, hängt der Hintergrund neu angeschlossene schreibgeschützte NTFS-Volumes mit Schreibzugriff ein, auch ohne geöffnetes Fenster. Ein manuell auf Schreibschutz zurückgesetztes Volume bleibt für die aktuelle Verbindung unverändert. Aktiv erscheint das Symbol blau."
         },
         "trayMode": {
           "name": "Systemleisten-Modus-Symbol",
@@ -215,12 +258,17 @@
         "refresh": {
           "name": "Aktualisieren-Symbol",
           "description": "Aktualisiert die Geräteliste und erkennt angeschlossene NTFS-Geräte neu."
+        },
+        "done": {
+          "name": "Fertig-Symbol",
+          "description": "Nach erfolgreichem Formatieren oder Reparieren wechselt das entsprechende Symbol kurz zu diesem Abschlusszeichen und kehrt nach etwa 3 Sekunden zurück."
         }
       }
     }
   },
   "settings": {
     "title": "Anwendungseinstellungen",
+    "hideIconTooltips": "3 Sekunden gedrückt halten, um Symbol-Tooltips umzuschalten",
     "savePassword": "Administrator-Passwort speichern",
     "savePasswordDesc": "Wenn aktiviert, speichert die App Ihr Administrator-Passwort sicher mit macOS Keychain für automatische Eingabe",
     "deletePassword": "Gespeichertes Passwort löschen",
@@ -252,7 +300,7 @@
       "de": "Deutsch (DE)"
     },
     "autoMount": "Automatisches Lesen/Schreiben",
-    "autoMountDesc": "Wenn aktiviert, werden neu eingefügte NTFS-Geräte automatisch im Lese-/Schreibmodus eingehängt",
+    "autoMountDesc": "Wenn aktiviert, hängt der Hintergrund neu angeschlossene schreibgeschützte NTFS-Volumes mit Schreibzugriff ein, ohne ein Fenster zu öffnen. Ein auf Schreibschutz zurückgesetztes Volume bleibt für die aktuelle Verbindung unverändert",
     "trayMode": "Tray-Modus",
     "trayModeDesc": "Wenn aktiviert, wird beim Schließen des Fensters die App nicht beendet, sondern in die Systemleiste minimiert. Sie können NTFS-Geräte schnell über das Tray-Symbol verwalten.",
     "preventSleep": "Ruhezustand verhindern",
@@ -297,6 +345,38 @@
     "resetting": "Wird zurückgesetzt {name} (aushängen und reparieren)...",
     "resetSuccess": "Zurücksetzen erfolgreich",
     "resetError": "Zurücksetzen fehlgeschlagen",
+    "repairing": "NTFS-Dateisystem von {name} wird repariert...",
+    "repairSuccess": "NTFS-Dateisystem von {name} wurde repariert und im {mode}-Modus wiederhergestellt",
+    "repairError": "Reparatur des NTFS-Dateisystems fehlgeschlagen",
+    "repairResultTitle": "Reparatur abgeschlossen",
+    "repairFailedTitle": "Reparatur nicht abgeschlossen",
+    "repairDeviceUnavailable": "Das Gerät ist getrennt oder der Partitionspfad hat sich geändert. Aktualisieren Sie die Liste und versuchen Sie es erneut.",
+    "repairUnmountFailed": "Das Gerät konnte nicht ausgehängt werden: {error}",
+    "repairFilesystemFailed": "ntfsfix ist fehlgeschlagen: {error}",
+    "repairRemountFailed": "Die Reparatur ist abgeschlossen, aber das erneute Einhängen ist fehlgeschlagen: {error}",
+    "repairAndRemountFailed": "Die Reparatur ist fehlgeschlagen: {error}. Auch das erneute Einhängen ist fehlgeschlagen: {mountError}",
+    "renaming": "{name} wird in {newName} umbenannt...",
+    "renameSuccess": "{name} wurde in {newName} umbenannt und erneut eingehängt",
+    "renameError": "Umbenennen fehlgeschlagen",
+    "renameFailedTitle": "Volume konnte nicht umbenannt werden",
+    "renameDeviceUnavailable": "Das Gerät ist getrennt oder der Partitionspfad hat sich geändert. Aktualisieren Sie die Liste und versuchen Sie es erneut.",
+    "renameInvalidName": "Die Volumebezeichnung darf nicht leer sein, höchstens 32 Zeichen lang sein und darf \\ / : * ? \" < > | nicht enthalten",
+    "renameToolMissing": "ntfslabel wurde nicht gefunden. Installieren Sie zuerst ntfs-3g-mac.",
+    "renameUnmountFailed": "Das Gerät konnte nicht ausgehängt werden: {error}",
+    "renameRemountFailed": "Die Bezeichnung wurde geschrieben, aber das erneute Einhängen ist fehlgeschlagen: {error}",
+    "renameFailedNeedChkdsk": "Die NTFS-Volumebezeichnung konnte nicht geschrieben werden. Schließen Sie das Gerät an einen Windows-PC an und führen Sie diesen Befehl als Administrator aus. Versuchen Sie es danach erneut auf dem Mac:\nchkdsk X: /x /r /f\nErsetzen Sie X: durch den Laufwerksbuchstaben dieses Geräts.",
+    "formatting": "{name} wird als GPT-NTFS formatiert...",
+    "formatSuccess": "{name} wurde als GPT-NTFS formatiert und erneut eingehängt",
+    "formatError": "Formatieren fehlgeschlagen",
+    "formatFailedTitle": "Die Festplatte konnte nicht formatiert werden",
+    "formatDeviceUnavailable": "Das Gerät ist getrennt oder der Partitionspfad hat sich geändert. Aktualisieren Sie die Liste und versuchen Sie es erneut.",
+    "formatNotMounted": "Hängen Sie das Gerät ein, bevor Sie es formatieren.",
+    "formatNotAllowed": "Nur externe Wechseldatenträger können formatiert werden. Interne und virtuelle Datenträger sind gesperrt.",
+    "formatToolMissing": "mkntfs wurde nicht gefunden. Installieren Sie zuerst ntfs-3g-mac.",
+    "formatEraseFailed": "Das Löschen der Festplatte ist fehlgeschlagen: {error}",
+    "formatUnmountFailed": "Die Festplatte konnte nicht ausgehängt werden: {error}",
+    "formatMkntfsFailed": "NTFS konnte nicht geschrieben werden: {error}",
+    "formatRemountFailed": "Die Festplatte wurde als NTFS formatiert, aber das erneute Einhängen ist fehlgeschlagen: {error}",
     "restoring": "Wird zurückgesetzt {name} auf schreibgeschützt...",
     "restoreSuccess": "Zurücksetzen erfolgreich",
     "restoreError": "Zurücksetzen fehlgeschlagen",
@@ -308,6 +388,10 @@
       "prompt": "Bitte geben Sie Ihr Mac-Konto-Anmeldepasswort ein:",
       "cancel": "Abbrechen",
       "confirm": "OK",
+      "togglePassword": "Passwort anzeigen/ausblenden",
+      "showPassword": "Passwort anzeigen",
+      "hidePassword": "Passwort ausblenden",
+      "savePassword": "Passwort speichern",
       "passwordEmpty": "Passwort darf nicht leer sein",
       "passwordParseError": "Passworteingabe kann nicht analysiert werden: Passwort ist leer",
       "userCancelled": "Benutzer hat die Passworteingabe abgebrochen",
@@ -316,6 +400,9 @@
       "mountDeviceRetry": "Gerät {name} als Lese-/Schreibzugriff einhängen (bitte Passwort erneut eingeben)",
       "unmountDevice": "Gerät {name} aushängen",
       "resetDevice": "Gerät {name} zurücksetzen (aushängen und reparieren)",
+      "repairDevice": "NTFS-Dateisystem von Gerät {name} reparieren",
+      "renameDevice": "Gerät {name} umbenennen",
+      "formatDevice": "Gerät {name} als GPT-NTFS formatieren",
       "restoreToReadOnly": "Gerät {name} auf schreibgeschützt zurücksetzen"
     },
     "noDevicesToMount": "Keine Geräte zum Einhängen (alle Geräte sind bereits als Lese-/Schreibzugriff eingehängt)",
@@ -352,6 +439,14 @@
     "projectLink": "Projekt-Repository",
     "email": "E-Mail",
     "bluesky": "Bluesky",
-    "ok": "OK"
+    "ok": "OK",
+    "checkUpdates": "Nach Updates suchen",
+    "checkingUpdates": "Updates werden gesucht...",
+    "upToDate": "Du verwendest die neueste Version ({version}).",
+    "updateAvailable": "Version {version} ist verfügbar.",
+    "versionAhead": "Diese Version ({version}) ist neuer als die neueste öffentliche Version ({latestVersion}).",
+    "checkFailed": "Updates konnten nicht gesucht werden. Überprüfe deine Netzwerkverbindung.",
+    "invalidRelease": "Die Release-Seite ist erreichbar, aber die Version konnte nicht erkannt werden.",
+    "viewReleases": "Veröffentlichungen anzeigen"
   }
 }

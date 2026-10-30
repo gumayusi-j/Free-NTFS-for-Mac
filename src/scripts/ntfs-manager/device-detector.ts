@@ -3,6 +3,7 @@ import { execAsync, fileExists } from './utils';
 import type { NTFSDevice } from '../../types/electron';
 import { DeviceCacheManager } from './device-cache';
 import { BatchExecutor } from './batch-executor';
+import { canFormatFromListTags, getParentDiskId, parseParentDiskTags } from './disk-safety';
 
 export class DeviceDetector {
   private mountedDevices: Set<string>;
@@ -169,12 +170,19 @@ export class DeviceDetector {
     }
   }
 
+  getLastDeviceList(): NTFSDevice[] {
+    return [...this.lastDeviceList];
+  }
+
   // 获取 NTFS 设备列表（优化版：使用缓存和批量执行，并行优化）
   async getNTFSDevices(forceRefresh: boolean = false): Promise<NTFSDevice[]> {
     try {
-      // 如果强制刷新，先失效缓存
+      // 如果强制刷新，先失效缓存。
+      // DeviceCache 与 BatchExecutor 是两套缓存；只清前者时，
+      // 插盘后的空 mount 结果仍会在命令缓存里存活，自动读写因此看不到新设备。
       if (forceRefresh) {
         this.cache.invalidateAll();
+        this.batchExecutor.invalidate();
       }
 
       // 检查缓存（仅在非强制刷新时使用）
@@ -259,6 +267,7 @@ export class DeviceDetector {
       // 从 diskutil list 中提取所有NTFS设备（补充检测，确保不遗漏）
       const allNTFSDevices = new Set<string>(); // 用于跟踪已检测到的设备路径
       const devices: NTFSDevice[] = [];
+      const parentDiskTags = parseParentDiskTags(diskutilListOutput);
 
       // 解析 diskutil list 输出，找出所有NTFS设备
       if (diskutilListOutput) {
@@ -352,6 +361,7 @@ export class DeviceDetector {
                         options: '',
                         isMounted: false,
                         isUnmounted: !volume, // 如果没有挂载点，标记为已卸载
+                        canFormat: canFormatFromListTags(parentDiskTags.get(getParentDiskId(partitionId))),
                         capacity
                       });
 
@@ -374,27 +384,32 @@ export class DeviceDetector {
         }
       }
       for (const line of lines) {
-        const parts = line.split(' on ');
-        if (parts.length !== 2) {
+        const separatorIndex = line.indexOf(' on ');
+        if (separatorIndex < 0) {
           console.warn('[设备检测] 跳过无效行（无法分割）:', line);
           continue;
         }
 
-        const devicePath = parts[0].trim();
-        const rest = parts[1].trim();
+        const devicePath = line.slice(0, separatorIndex).trim();
+        const rest = line.slice(separatorIndex + 4).trim();
 
-        const volumeMatch = rest.match(/^(\/Volumes\/[^\s(]+)/);
-        const optionsMatch = rest.match(/\(([^)]+)\)/);
+        // 系统只读挂载：ntfs；较新 macOS FSKit：xntfs；ntfs-3g 读写：*fuse
+        const optionsMatch = rest.match(/\s+\(((?:[\w-]*ntfs|[^,\s]*fuse)\b[^()]*)\)\s*$/i);
 
-        if (!volumeMatch) {
+        if (!optionsMatch) {
           console.warn('[设备检测] 跳过无效行（无法匹配卷名）:', line);
           continue;
         }
 
-        const volume = volumeMatch[1].trim();
+        const volume = rest.slice(0, optionsMatch.index).trimEnd();
+        if (!volume.startsWith('/Volumes/')) {
+          console.warn('[设备检测] 跳过非卷宗挂载路径:', line);
+          continue;
+        }
+
         const volumeName = volume.replace('/Volumes/', '');
         const disk = devicePath.replace('/dev/', '');
-        const options = optionsMatch ? optionsMatch[1] : '';
+        const options = optionsMatch[1];
         const isReadOnly = options.includes('read-only');
 
         // 尝试获取稳定 UUID（diskutil info；带缓存与超时，避免拖慢刷新）
@@ -508,6 +523,7 @@ export class DeviceDetector {
           isReadOnly: finalIsReadOnly,
           options,
           isMounted: deviceIsMounted,
+          canFormat: canFormatFromListTags(parentDiskTags.get(getParentDiskId(disk))),
           capacity
         });
 
@@ -573,6 +589,7 @@ export class DeviceDetector {
               isUnmounted: true,
               isReadOnly: true, // 已卸载的设备默认显示为只读
               isMounted: false,
+              canFormat: canFormatFromListTags(parentDiskTags.get(getParentDiskId(disk))),
               capacity
             });
           } else {
@@ -630,6 +647,7 @@ export class DeviceDetector {
    */
   invalidateCache(): void {
     this.cache.invalidateAll();
+    this.batchExecutor.invalidate();
     this.lastDeviceHash = '';
   }
 }

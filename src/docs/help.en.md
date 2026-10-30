@@ -1,9 +1,17 @@
-## Disclaimer
+## About Nigate
 
-Using this tool to mount and modify NTFS devices carries the risk of data loss. It is recommended to back up important data before use. This tool is provided "as is" without any express or implied warranties. The developer is not responsible for any data loss caused by using this tool.
+**Nigate** is a free macOS utility for reading and writing NTFS storage devices, built on ntfs-3g.
 
-> [!WARN]
-> The stable operation and data integrity of this software depend on the performance of storage devices. To avoid data read/write errors, transfer interruptions, or device recognition failures, it is recommended to use USB drives made with high-quality flash memory chips that have reliable read/write performance.
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> Author page: [https://github.com/hoochanlon](https://github.com/hoochanlon)
+- <img src="../imgs/svg/social/github.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> Software project: [https://github.com/hoochanlon/Free-NTFS-for-Mac](https://github.com/hoochanlon/Free-NTFS-for-Mac)
+- <img src="../imgs/svg/social/email.svg" alt="" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> Contact email: [hoochanlon@outlook.com](mailto:hoochanlon@outlook.com)
+
+> [!IMPORTANT]
+> **Disclaimer**
+>
+> Using this tool to mount and modify NTFS devices carries the risk of data loss. It is recommended to back up important data before use. This tool is provided "as is" without any express or implied warranties. The developer is not responsible for any data loss caused by using this tool.
+
+The stable operation and data integrity of this software depend on the performance of storage devices. To avoid data read/write errors, transfer interruptions, or device recognition failures, it is recommended to use USB drives made with high-quality flash memory chips that have reliable read/write performance.
 
 ## System Requirements
 
@@ -46,6 +54,9 @@ Follow the prompts to complete the installation. If the network is slow, you can
 
 #### 3. Install MacFUSE
 
+> [!TIP]
+> Apple Silicon Macs block third-party kernel extensions by default. Shut down, then press and hold the power button to enter startup options → Options → Continue → Utilities → Startup Security Utility. Select the system disk, open Security Policy, choose Reduced Security, and check “Allow user management of kernel extensions from identified developers.”
+
 Run the following command in Terminal:
 
 ```bash
@@ -61,6 +72,9 @@ brew tap gromgit/homebrew-fuse
 brew install ntfs-3g-mac
 ```
 
+> [!TIP]
+> After installing macFUSE and ntfs-3g, go to System Settings → General → Login Items & Extensions → Extensions → By Category → File System Extensions. Then click the info icon and enable ntfs-3g (if present) and macFUSE.
+
 **Note**: The installation order is important. Please install in the order: 1 → 2 → 3 → 4.
 
 ## Interface Icons Guide
@@ -69,12 +83,16 @@ The application's main interface provides several functional icons to help you q
 
 ### Title Bar Icons
 
-- <img src="../imgs/svg/devices/flash-auto.svg" alt="Auto Read-Write" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Auto Read-Write Icon** - When enabled, newly inserted NTFS devices will be automatically mounted in read-write mode. The icon appears blue when active.
+- <img src="../imgs/svg/devices/flash-auto.svg" alt="Auto Read-Write" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Auto Read-Write Icon** - When enabled, the background mounts newly inserted read-only NTFS volumes as read-write, whether or not a window is open. A volume you restore to read-only stays unchanged for the current connection. The icon appears blue when active.
 - <img src="../imgs/svg/devices/tray.svg" alt="Tray Mode" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Tray Mode Icon** - When enabled, closing the window will minimize the application to the system tray instead of quitting. The icon appears red when active.
 - <img src="../imgs/svg/system/caffe.svg" alt="Prevent Sleep" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Prevent Sleep Icon** - When enabled, the system will prevent entering sleep mode to ensure devices remain accessible. The icon appears coffee-colored when active.
 - <img src="../imgs/svg/system/protect.svg" alt="Status Protection" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Status Protection Icon** - Long press for 3s to toggle protection status. When protected, auto read-write, tray mode, and prevent sleep features will be disabled to prevent accidental operations. The icon appears green with a pulse animation when protected.
 - <img src="../imgs/svg/ui/info.svg" alt="About" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **About Icon** - Opens the about window to view application information and project links.
 - <img src="../imgs/svg/actions/exit.svg" alt="Quit" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Quit Icon** - Quits the application.
+
+### Settings Header Icon
+
+- 🤫 **Easter Egg Icon** - Beside the "Application Settings" heading. Press and hold for 3 seconds to toggle hover tooltips for icon buttons throughout the app; the choice is saved.
 
 ### Tab Icons
 
@@ -83,6 +101,13 @@ The application's main interface provides several functional icons to help you q
 ### Device Management Icons
 
 - <img src="../imgs/svg/actions/refresh.svg" alt="Refresh" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Refresh Icon** - Refreshes the device list and re-detects connected NTFS devices.
+- <img src="../imgs/svg/actions/format.svg" alt="Format" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Format Icon** - Rebuilds the entire external disk as GPT NTFS. This erases all partitions and data on that disk and cannot be undone. The icon appears only for mounted external disks.
+- <img src="../imgs/svg/actions/repair.svg" alt="Repair" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Repair Icon** - Click the repair icon for a device and confirm to attempt to repair its NTFS file system. Administrator privileges and a password are required. Resource busy errors can be handled automatically.
+
+> [!tip]
+> <img src="../imgs/svg/actions/check-okey-done.svg" alt="Done" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 4px; display: inline-block;"> **Done Icon** - After format or repair succeeds, the corresponding format/repair icon briefly changes to this completion mark, then returns after about 3 seconds.
+
+**Note: `ntfsfix` has limited repair capabilities and cannot replace Windows `chkdsk /f`.**
 
 ## Usage Steps
 
@@ -124,42 +149,32 @@ For devices in read-only status, you can click the "Read-Write" button to mount 
   - System permission issues
 - Please safely eject the device after mounting to avoid data loss
 
-### Auto Read-Write Feature
+### Auto Read-Write
 
-The auto read-write feature allows you to automatically mount newly inserted NTFS devices in read-write mode without manual operation.
+Auto read-write runs in the background. It does not depend on the main window or the tray window being open. While enabled, a device change mounts eligible read-only NTFS volumes as read-write.
 
-**How to Enable:**
+**How to enable:**
 
-- Click the auto read-write icon (<img src="../imgs/svg/devices/flash-auto.svg" alt="Auto Read-Write" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;">) in the title bar. The icon turns blue when enabled
-- Check the "Auto Read-Write" option in the tray menu
-- Toggle the auto read-write button in the main interface title bar
+- Click the auto read-write icon (<img src="../imgs/svg/devices/flash-auto.svg" alt="Auto Read-Write" style="height: 14px; width: 14px; vertical-align: middle; margin-right: 4px; display: inline-block;">) in the title bar. It turns blue when enabled
+- Check "Auto Read-Write" in the tray menu
 
-**Features:**
+**When it mounts:**
 
-- **Auto-detect New Devices**: When you insert a new NTFS device, the app will automatically detect and mount it in read-write mode
-- **Smart Skip Manually Read-Only Devices**: If you manually set a device to read-only, the auto read-write feature will respect your choice and will not mount it as read-write again
-- **Auto-process Existing Devices When Enabled**: When you enable the auto read-write feature, the app will automatically check currently connected read-only devices (excluding those you manually set to read-only) and attempt to mount them in read-write mode
+- **When turned on**: it immediately checks connected volumes that are still read-only and mounted
+- **When a device is inserted later**: the next device change checks newly attached read-only volumes
+- Volumes that are already read-write, not mounted, or have no usable volume are skipped
 
-**Use Cases:**
+**When it does not mount:**
 
-- Frequently using multiple NTFS devices and want automatic mounting without manual operation each time
-- When batch processing multiple devices, you can enable the auto read-write feature once
-- When temporarily needing automatic mounting, you can turn it on or off at any time
+- **Manual read-only**: restoring a volume to read-only, or resetting it, remembers that choice. Auto read-write will not change it back while it stays connected
+- **A manual read-write mount clears that memory**
+- **Short pause after restoring read-only**: for about 8 seconds after a restore or reset, it will not immediately switch the volume back
+- **During repair**: auto read-write is paused for that volume for about 2 minutes
+- **One attempt per change**: the same volume is tried once for each device change. A failure is not retried in that round; the next insertion or the next time the switch is turned on starts a new attempt
 
-**Notes:**
+**After removal:**
 
-- The auto read-write feature requires administrator privileges. You will be prompted for a password on the first mount
-- If you manually set a device to read-only, that device will be added to the "manually read-only devices" list, and the auto read-write feature will not mount it again
-- If you manually mount a device as read-write, that device will be removed from the "manually read-only devices" list, and the auto read-write feature can work normally on it afterwards
-- The auto read-write feature does not affect your manual operations. You can manually mount or unmount devices at any time
-
-**State Reset Mechanism:**
-
-To ensure the intelligence and user experience of the auto read-write feature, the application implements the following state reset mechanisms:
-
-- **Cooldown Protection**: When you manually set a device to read-only or perform a reset operation, the system sets an 8-second cooldown period. During this time, the auto read-write feature will not trigger, preventing the newly set state from being immediately overwritten
-- **Device Removal Reset**: When a device is unplugged, if it is reinserted within 8-9 seconds, the manual read-only state will be preserved; if reinserted after more than 9 seconds, the device will automatically be removed from the "manually read-only devices" list, restoring default behavior and allowing normal use of the auto read-write feature
-- **Smart Cleanup**: The system automatically cleans up cooldown records and manual read-only states for unplugged devices, ensuring devices work properly when reinserted
+The remembered read-only choice lasts only for the current connection. After the volume is ejected or unplugged for more than about 9 seconds, the choice is cleared and the next insertion is eligible again. Reappearing within 9 seconds keeps the choice, so the brief unmount during a read-only restore is not treated as removal.
 
 ### Unmount Device
 
@@ -242,7 +257,7 @@ If you encounter `Error opening '/dev/diskXsX': Resource busy`, this usually occ
 
 **Cause**: This error typically occurs when a mounting operation is forcibly interrupted (such as force quitting the application, system crash, etc.), leaving the device in an occupied state. You need to unmount and repair it before you can remount it.
 
-**Using the Reset Button**: If you encounter a "Resource busy" error, you can also directly click the "Reset" button in the device list. The reset function will automatically perform the following operations:
+**Using the Reset Button**: When you encounter a "Resource busy" error, you can click the Reset button directly. The reset function automatically performs the following operations:
 - Unmount the device
 - Fix the file system
 - Clear device occupancy status
@@ -273,6 +288,37 @@ If you encounter problems during installation, please check the following:
    - Run `brew update` to update Homebrew
    - Check for permission issues
 
+### MacFUSE Is Too Old After a Major macOS Upgrade
+
+If you see this message, the installed version of macFUSE is incompatible with the currently running version of macOS:
+
+> The installed version of macFUSE is too old for the operating system. Please upgrade your macFUSE installation to one that is compatible with the currently running version of macOS.
+
+Follow these steps:
+
+1. **Allow apps from all sources**
+
+   Run this command in Terminal:
+
+   ```bash
+   sudo spctl --master-disable
+   ```
+
+   If Terminal reports `Globally disabling the assessment system needs to be confirmed in System Settings.`, reopen System Settings and go to **Privacy & Security**. Under **Security**, find **Allow applications downloaded from** and select **Anywhere**. The wording may vary by macOS version.
+
+   > [!WARN]
+   > This command globally disables Gatekeeper assessment and reduces system security. Use it only when necessary. After upgrading macFUSE and approving its system extension, you can restore the default assessment with `sudo spctl --master-enable`.
+
+2. **Upgrade macFUSE**
+
+   ```bash
+   brew upgrade --cask --greedy macfuse
+   ```
+
+3. **Approve the system extension and restart**
+
+   Go to **System Settings → Privacy & Security**, approve the macFUSE system extension, and restart your Mac when prompted.
+
 If the problem persists, please refer to the official documentation of each dependency or seek technical support.
 
 ### Cannot access device after unmounting?
@@ -285,7 +331,8 @@ In the "Operation Logs" tab, you can view records of all operations, including:
 
 - Dependency check results
 - Device detection status
-- Mount/unmount operation results
+- Mount, unmount, and eject operation results
+- Repair, rename, and format operation results
 - Error messages and warnings
 
 **Enable Operation Logs:**

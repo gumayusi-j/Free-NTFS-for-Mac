@@ -21,10 +21,11 @@
 
   // 获取翻译文本的辅助函数
   function t(key: string, params?: Record<string, string | number>): string {
-    if ((window as any).AppUtils && (window as any).AppUtils.I18n) {
-      return (window as any).AppUtils.I18n.t(key, params);
+    const i18n = (window as any).AppUtils?.I18n;
+    if (i18n?.isReady?.() && i18n.t) {
+      return i18n.t(key, params);
     }
-    return key; // 如果 i18n 未初始化，返回 key
+    return key;
   }
 
   // 格式化容量显示
@@ -35,9 +36,41 @@
       return `${(bytes / 1024).toFixed(1)} KB`;
     } else if (bytes < 1024 * 1024 * 1024) {
       return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    } else {
+    } else if (bytes < 1024 * 1024 * 1024 * 1024) {
       return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    } else {
+      return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2)} TB`;
     }
+  }
+
+  function escapeHTML(value: string): string {
+    return value.replace(/[&<>"']/g, character => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return entities[character];
+    });
+  }
+
+  // 格式化/修复成功后的短暂完成态：按 disk + 动作记录，刷新列表时仍画完成图标
+  function getDoneHint(disk: string): { action: string; until: number } | null {
+    const hint = (AppModules.Devices.doneHints || {})[disk];
+    if (!hint || typeof hint.until !== 'number' || hint.until <= Date.now()) return null;
+    return hint;
+  }
+
+  function renderUtilityButton(kind: 'format' | 'repair' | 'rename', disk: string, title: string): string {
+    const done = kind !== 'rename' && getDoneHint(disk)?.action === kind;
+    const classes = `${kind}-icon-btn ${kind}-btn${done ? ' action-success-feedback' : ''}`;
+    const icon = done
+      ? '<img src="../imgs/svg/actions/check-okey-done.svg" alt="" aria-hidden="true">'
+      : '<span aria-hidden="true"></span>';
+    const disabled = done ? ' disabled' : '';
+    return `<button class="${classes}" type="button" data-disk="${disk}" title="${title}" aria-label="${title}"${disabled}>${icon}</button>`;
   }
 
   // 设备渲染功能
@@ -50,6 +83,7 @@
       const devices = AppModules.Devices.devices || [];
 
       if (devices.length === 0) {
+        devicesList.hidden = false;
         devicesList.innerHTML = `
           <div class="empty-state">
             <div class="empty-icon"></div>
@@ -60,7 +94,7 @@
         return;
       }
 
-      // 保存当前选中的设备（如果有）
+      devicesList.hidden = false;
       const selectedDisk = (document.querySelector('.device-item.selected') as HTMLElement)?.dataset?.disk;
 
       // 检查是否是托盘窗口（用于判断是否需要重新渲染）
@@ -70,12 +104,14 @@
       // 生成设备状态的唯一标识，用于判断是否需要更新
       // 包含容量信息，确保容量变化时能触发重新渲染
       // 同时包含当前语言，确保语言变更时能触发重新渲染
-      const currentLanguage = ((window as any).AppUtils && (window as any).AppUtils.I18n)
-        ? ((window as any).AppUtils.I18n.getLanguage ? (window as any).AppUtils.I18n.getLanguage() : 'en')
-        : 'en';
+      const i18n = (window as any).AppUtils?.I18n;
+      const currentLanguage = i18n?.isReady?.() && i18n.getLanguage
+        ? i18n.getLanguage()
+        : 'pending';
       const deviceStateKey = devices.map((d: any) => {
         const capacityInfo = d.capacity ? `${d.capacity.total}:${d.capacity.available || 0}:${d.capacity.used || 0}` : 'no-capacity';
-        return `${d.disk}:${d.isReadOnly}:${d.isUnmounted || false}:${capacityInfo}`;
+        const doneFlag = getDoneHint(d.disk)?.action || '0';
+        return `${d.disk}:${d.volumeName}:${d.isReadOnly}:${d.isUnmounted || false}:${d.canFormat ? '1' : '0'}:${capacityInfo}:${doneFlag}`;
       }).join('|') + `|lang:${currentLanguage}`;
       const lastStateKey = (devicesList as any).__lastStateKey || '';
 
@@ -101,6 +137,7 @@
       (devicesList as any).__lastIsTrayWindow = isTrayWindow;
       (devicesList as any).__lastStateKey = deviceStateKey;
 
+      devicesList.hidden = false;
       devicesList.innerHTML = '';
 
       // 渲染所有设备
@@ -225,13 +262,22 @@
         // 托盘窗口：显示磁盘名称、读写状态、容量条和操作按钮
         item.innerHTML = `
           <div class="device-card-tray">
-            <div class="device-icon-large">
-              <img src="../imgs/svg/devices/drive.svg" alt="${device.volumeName}" class="device-icon-svg">
-            </div>
             <div class="device-card-content">
               <div class="device-card-header-tray">
-              <div class="device-name-large">${device.volumeName}</div>
+                <div class="device-icon-large">
+                  <img src="../imgs/svg/devices/drive.svg" alt="" aria-hidden="true" class="device-icon-svg">
+                </div>
+                <div class="device-name-large" title="${escapeHTML(device.volumeName)}">${escapeHTML(device.volumeName)}</div>
+              </div>
+              <div class="device-status-actions">
                 <span class="device-status device-status-tray ${statusClass}">${statusText}</span>
+                <div class="device-utility-actions">
+                  ${!isUnmounted ? `
+                  ${renderUtilityButton('rename', device.disk, t('devices.renameTooltip'))}
+                  ${device.canFormat ? renderUtilityButton('format', device.disk, t('devices.formatTooltip')) : ''}
+                  ${renderUtilityButton('repair', device.disk, t('devices.repairTooltip'))}
+                  ` : ''}
+                </div>
               </div>
               ${device.capacity && device.capacity.total > 0 && availableText && totalText ? `
               <div class="device-capacity-info-windows">
@@ -290,11 +336,18 @@
       } else {
         item.innerHTML = `
           <div class="device-header">
-            <div class="device-name">
+            <div class="device-name" title="${escapeHTML(device.volumeName)}">
               <span class="device-icon"></span>
-              ${device.volumeName}
+              <span class="device-name-text">${escapeHTML(device.volumeName)}</span>
             </div>
-            <span class="device-status ${statusClass}">${statusText}</span>
+            <div class="device-status-actions">
+              <span class="device-status ${statusClass}">${statusText}</span>
+              ${!isUnmounted ? `
+              ${renderUtilityButton('rename', device.disk, t('devices.renameTooltip'))}
+              ${device.canFormat ? renderUtilityButton('format', device.disk, t('devices.formatTooltip')) : ''}
+              ${renderUtilityButton('repair', device.disk, t('devices.repairTooltip'))}
+              ` : ''}
+            </div>
           </div>
           <div class="device-info">
             ${(() => {

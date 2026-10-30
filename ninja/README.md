@@ -1,6 +1,6 @@
 # 🥷 忍者ツールセット
 
-![ ](https://i.meee.com.tw/sjxm1VW.png)
+<img width="1080" src="https://free.boltp.com/2026/10/04/6ac209c7e4784.webp" />
 
 このフォルダには、プロジェクトの開発、ビルド、テストに必要な各種スクリプトとツールファイルが含まれています。
 
@@ -23,7 +23,6 @@
 | `filter-tsc-output.js` | JavaScript | TypeScript 出力のフィルタリング | 開発時（自動） |
 | `test-modules-cli.js` | JavaScript | モジュールテスト（コマンドライン） | テスト時 |
 | `test-modules-enhanced.html` | HTML | モジュールテストページ | テスト時 |
-| `makimono/` | ディレクトリ | ツールセットドキュメント（多言語） | 参照時 |
 
 ## 🚀 クイックスタート
 

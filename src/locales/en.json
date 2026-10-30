@@ -18,6 +18,13 @@
     "quit": "Quit",
     "file": "File",
     "close": "Close",
+    "edit": "Edit",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "selectAll": "Select All",
     "view": "View",
     "reload": "Reload",
     "forceReload": "Force Reload",
@@ -53,6 +60,10 @@
   "dependencies": {
     "title": "System Dependencies",
     "checkButton": "Check Dependencies",
+    "autoInstall": "One-click Install",
+    "autoInstallTitle": "Install missing dependencies in Terminal, step by step",
+    "autoInstallOpened": "Terminal opened. After you finish the current step, the next one starts automatically. You will see “All steps completed” when done.",
+    "autoInstallFailed": "Failed to open Terminal: {error}",
     "checking": "Checking...",
     "installed": "Installed",
     "installedOptional": "Installed (Optional)",
@@ -76,17 +87,25 @@
     "brew": {
       "name": "Homebrew",
       "description": "Package manager for macOS, used to install and manage software packages",
-      "installGuide": "Run the above command in the terminal, follow the prompts to complete the installation. If the network is slow, you can use a domestic mirror source."
+      "installGuide": "Run the above command in the terminal and follow the prompts to complete the installation. If the network is slow, try the China mainland mirror command below.",
+      "installGuideMirrorCommandLabel": "China mainland mirror install command:"
     },
     "macfuse": {
       "name": "MacFUSE",
-      "description": "File system user space framework, required by ntfs-3g",
-      "installGuide": "Homebrew must be installed first. Run the above command in the terminal to install."
+      "description": "File system user space framework, required by ntfs-3g.",
+      "installGuide": "Apple Silicon tip: Third-party kernel extensions are blocked by default. Shut down and press and hold the power button to enter startup options → Options → Continue → Utilities → Startup Security Utility. Select the system disk, open Security Policy, choose Reduced Security, and check “Allow user management of kernel extensions from identified developers.”",
+      "installGuide2": "After a macOS upgrade, if you see “The installed version of macFUSE is too old for the operating system,” follow these steps.",
+      "installGuide2Step1": "Run this command in Terminal, then enable “Anywhere” under System Settings > Privacy & Security:",
+      "installGuide2Command1": "sudo spctl --master-disable",
+      "installGuide2Step2": "Run this command in Terminal to upgrade MacFUSE:",
+      "installGuide2Command2": "brew upgrade --cask --greedy macfuse",
+      "installGuide2Step3": "Approve the macFUSE extension under Privacy & Security, then restart your Mac."
     },
     "ntfs3g": {
       "name": "ntfs-3g",
       "description": "NTFS file system driver, providing NTFS read-write support",
-      "installGuide": "Homebrew and MacFUSE must be installed first. Run the above command in the terminal to install."
+      "installGuide": "Homebrew and MacFUSE must be installed first. Run the above command in the terminal to install.",
+      "installGuideTip": "After installing macFUSE and ntfs-3g, go to System Settings → General → Login Items & Extensions → Extensions → By Category → File System Extensions. Then click the info icon and enable ntfs-3g (if present) and macFUSE."
     },
     "fswatch": {
       "name": "fswatch (Optional)",
@@ -114,6 +133,20 @@
     "remount": "Remount as Read-Write",
     "reset": "Reset",
     "resetTooltip": "Reset device (unmount and fix, for resolving Resource busy errors)",
+    "repair": "Repair",
+    "repairTooltip": "Repair",
+    "repairConfirm": "Repair NTFS partition?",
+    "repairConfirmNote": "ntfsfix can only handle basic issues and cannot replace Windows chkdsk. Repairing may cause data loss.",
+    "targetDevice": "Target device: {name}",
+    "rename": "Rename",
+    "renameTooltip": "Rename",
+    "renameTitle": "Rename",
+    "renameNote": "Note:\n1. Do not rename while files are transferring — it can interrupt the copy or corrupt the volume label\n2. After you confirm, the new name is written, then the volume is unmounted and remounted so it takes effect",
+    "renamePlaceholder": "Enter a new volume name",
+    "format": "Format",
+    "formatTooltip": "Format",
+    "formatConfirm": "This will erase all partitions and data on the entire disk!",
+    "formatConfirmNote": "1. This cannot be undone. Back up important data first.\n2. Formatting may take a while and will unmount and remount the volume several times.\n3. Do not disconnect the device or interrupt the process. Please wait until it finishes.\nContinue?",
     "unmount": "Unmount",
     "eject": "Eject",
     "restoreReadOnly": "Restore to Read-Only",
@@ -144,6 +177,7 @@
   "dialog": {
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "continue": "Continue",
     "ok": "OK"
   },
   "logs": {
@@ -173,6 +207,15 @@
     "loading": "Loading...",
     "loadError": "Load failed: {error}",
     "unknownError": "Unknown error",
+    "toc": "Contents",
+    "toggleToc": "Show or hide contents",
+    "toggleSearch": "Show or hide search",
+    "searchPlaceholder": "Search the guide...",
+    "searchNoResult": "No matches",
+    "searchCount": "{current}/{total}",
+    "searchPrev": "Previous",
+    "searchNext": "Next",
+    "backToTop": "Back to top {percent}%",
     "icons": {
       "title": "Interface Icons Guide",
       "intro": "The application's main interface provides several functional icons to help you quickly access common features:",
@@ -180,7 +223,7 @@
         "title": "Title Bar Icons",
         "autoMount": {
           "name": "Auto Read-Write Icon",
-          "description": "When enabled, newly inserted NTFS devices will be automatically mounted in read-write mode. The icon appears blue when active."
+          "description": "When enabled, the background mounts newly inserted read-only NTFS volumes as read-write, whether or not a window is open. A volume you restore to read-only stays unchanged for the current connection. The icon appears blue when active."
         },
         "trayMode": {
           "name": "Tray Mode Icon",
@@ -215,12 +258,17 @@
         "refresh": {
           "name": "Refresh Icon",
           "description": "Refreshes the device list and re-detects connected NTFS devices."
+        },
+        "done": {
+          "name": "Done Icon",
+          "description": "After format or repair succeeds, the corresponding format/repair icon briefly changes to this completion mark, then returns after about 3 seconds."
         }
       }
     }
   },
   "settings": {
     "title": "Application Settings",
+    "hideIconTooltips": "Press and hold for 3 seconds to toggle icon tooltips",
     "savePassword": "Save Administrator Password",
     "savePasswordDesc": "When enabled, the app will securely save your administrator password using macOS Keychain for automatic input",
     "deletePassword": "Delete Saved Password",
@@ -252,7 +300,7 @@
       "de": "Deutsch (DE)"
     },
     "autoMount": "Auto Read-Write",
-    "autoMountDesc": "When enabled, newly inserted NTFS devices will be automatically mounted in read-write mode",
+    "autoMountDesc": "When enabled, the background mounts newly inserted read-only NTFS volumes as read-write without opening a window. A volume restored to read-only stays unchanged for the current connection",
     "trayMode": "Tray Mode",
     "trayModeDesc": "When enabled, closing the window will minimize to the system tray instead of quitting the app. You can quickly manage NTFS devices through the tray icon.",
     "preventSleep": "Prevent Sleep",
@@ -297,6 +345,38 @@
     "resetting": "Resetting {name} (unmounting and fixing)...",
     "resetSuccess": "Reset successful",
     "resetError": "Reset failed",
+    "repairing": "Repairing the NTFS file system on {name}...",
+    "repairSuccess": "The NTFS file system on {name} was repaired and restored to {mode} mode",
+    "repairError": "NTFS file system repair failed",
+    "repairResultTitle": "Repair complete",
+    "repairFailedTitle": "Repair incomplete",
+    "repairDeviceUnavailable": "The device is disconnected or its partition path changed. Refresh and try again.",
+    "repairUnmountFailed": "Could not unmount the device: {error}",
+    "repairFilesystemFailed": "ntfsfix failed: {error}",
+    "repairRemountFailed": "Repair completed, but remounting failed: {error}",
+    "repairAndRemountFailed": "Repair failed: {error}. Remounting also failed: {mountError}",
+    "renaming": "Renaming {name} to {newName}...",
+    "renameSuccess": "{name} was renamed to {newName} and remounted",
+    "renameError": "Rename failed",
+    "renameFailedTitle": "Could not rename the volume",
+    "renameDeviceUnavailable": "The device is disconnected or its partition path changed. Refresh and try again.",
+    "renameInvalidName": "The volume label cannot be empty, must be 32 characters or fewer, and cannot contain \\ / : * ? \" < > |",
+    "renameToolMissing": "ntfslabel was not found. Install ntfs-3g-mac first.",
+    "renameUnmountFailed": "Could not unmount the device: {error}",
+    "renameRemountFailed": "The label was written, but remounting failed: {error}",
+    "renameFailedNeedChkdsk": "Could not write the NTFS volume label. Connect the drive to a Windows PC and run this command as Administrator. When it finishes, try again on your Mac:\nchkdsk X: /x /r /f\nReplace X: with the drive letter of this device.",
+    "formatting": "Formatting {name} as GPT NTFS...",
+    "formatSuccess": "{name} was formatted as GPT NTFS and remounted",
+    "formatError": "Format failed",
+    "formatFailedTitle": "Could not format the disk",
+    "formatDeviceUnavailable": "The device is disconnected or its partition path changed. Refresh and try again.",
+    "formatNotMounted": "Mount the device before formatting it.",
+    "formatNotAllowed": "Only external removable disks can be formatted. Internal and virtual disks are blocked.",
+    "formatToolMissing": "mkntfs was not found. Install ntfs-3g-mac first.",
+    "formatEraseFailed": "Failed to erase the disk: {error}",
+    "formatUnmountFailed": "Could not unmount the disk: {error}",
+    "formatMkntfsFailed": "Failed to write NTFS: {error}",
+    "formatRemountFailed": "The disk was formatted as NTFS, but remounting failed: {error}",
     "restoring": "Restoring {name} to read-only mode...",
     "restoreSuccess": "Restore successful",
     "restoreError": "Restore failed",
@@ -308,6 +388,10 @@
       "prompt": "Please enter your Mac account login password:",
       "cancel": "Cancel",
       "confirm": "OK",
+      "togglePassword": "Show/Hide Password",
+      "showPassword": "Show Password",
+      "hidePassword": "Hide Password",
+      "savePassword": "Save Password",
       "passwordEmpty": "Password cannot be empty",
       "passwordParseError": "Unable to parse password input: password is empty",
       "userCancelled": "User cancelled password input",
@@ -316,6 +400,9 @@
       "mountDeviceRetry": "Mount device {name} as read-write mode (please re-enter password)",
       "unmountDevice": "Unmount device {name}",
       "resetDevice": "Reset device {name} (unmount and fix)",
+      "repairDevice": "Repair the NTFS file system on {name}",
+      "renameDevice": "Rename device {name}",
+      "formatDevice": "Format {name} as GPT NTFS",
       "restoreToReadOnly": "Restore device {name} to read-only mode"
     },
     "noDevicesToMount": "No devices to mount (all devices are already mounted as read-write)",
@@ -352,6 +439,14 @@
     "projectLink": "Project Repository",
     "email": "Email",
     "bluesky": "Bluesky",
-    "ok": "OK"
+    "ok": "OK",
+    "checkUpdates": "Check for Updates",
+    "checkingUpdates": "Checking for updates...",
+    "upToDate": "You're using the latest version ({version}).",
+    "updateAvailable": "Version {version} is available.",
+    "versionAhead": "This version ({version}) is newer than the latest public release ({latestVersion}).",
+    "checkFailed": "Couldn't check for updates. Check your network connection.",
+    "invalidRelease": "Connected to the release page, but its version could not be recognized.",
+    "viewReleases": "View Releases"
   }
 }

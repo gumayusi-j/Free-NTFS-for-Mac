@@ -1,6 +1,6 @@
 // 依赖检查模块
 import type { Dependencies } from '../../types/electron';
-import { commandExists, execAsync, fileExists } from './utils';
+import { commandExists, execAsync, fileExists, getCommandEnv } from './utils';
 import { PathFinder } from './path-finder';
 
 // 检查 MacFUSE（使用多种方法，提高可靠性）
@@ -8,37 +8,37 @@ async function checkMacFUSE(brewExists: boolean): Promise<boolean> {
   // 方法1：优先使用 brew list --cask（最准确的方法，如果 Homebrew 可用）
   if (brewExists) {
     try {
-      // 确保 PATH 包含 Homebrew 路径（合并现有 PATH 和默认路径）
-      const defaultPaths = [
-        '/usr/local/bin',
-        '/opt/homebrew/bin',
-        '/usr/bin',
-        '/bin',
-        '/usr/sbin',
-        '/sbin'
-      ];
-      const existingPath = process.env.PATH || '';
-      const pathArray = existingPath ? existingPath.split(':') : [];
-      // 合并并去重
-      const mergedPaths = [...new Set([...defaultPaths, ...pathArray])];
+      const env = getCommandEnv();
 
-      const env = {
-        ...process.env,
-        PATH: mergedPaths.join(':')
-      };
-
-      // 使用 brew list --cask 检查（最准确的方法）
+      let installedByBrew = false;
       try {
         await Promise.race([
           execAsync('brew list --cask macfuse 2>/dev/null', { env }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
         ]);
-        // 如果命令成功执行（退出码为 0），说明已安装
-        console.log('[依赖检查] MacFUSE 通过 brew list --cask 检查');
-        return true;
-      } catch (error) {
-        // brew list --cask 返回非零退出码或抛出异常，说明未安装
+        installedByBrew = true;
+      } catch {
         console.log('[依赖检查] brew list --cask 检查：MacFUSE 未通过 Homebrew 安装');
+      }
+
+      if (installedByBrew) {
+        try {
+          const outdatedResult = await Promise.race([
+            execAsync('brew outdated --cask --greedy macfuse 2>/dev/null', {
+              env: { ...env, HOMEBREW_NO_AUTO_UPDATE: '1' }
+            }),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+          ]) as { stdout: string };
+          if (outdatedResult.stdout.trim()) {
+            console.log('[依赖检查] MacFUSE cask 已过期，需要升级');
+            return false;
+          }
+          console.log('[依赖检查] MacFUSE 已安装且为最新 cask 版本');
+          return true;
+        } catch (error) {
+          console.warn('[依赖检查] 无法确认 MacFUSE 是否为最新版本:', error);
+          return false;
+        }
       }
     } catch {
       // 忽略错误，继续尝试其他方法
@@ -95,24 +95,7 @@ async function checkMacFUSE(brewExists: boolean): Promise<boolean> {
   // 方法4：使用 brew info 作为备用（如果 Homebrew 可用但 brew list 失败）
   if (brewExists) {
     try {
-      // 确保 PATH 包含 Homebrew 路径（合并现有 PATH 和默认路径）
-      const defaultPaths = [
-        '/usr/local/bin',
-        '/opt/homebrew/bin',
-        '/usr/bin',
-        '/bin',
-        '/usr/sbin',
-        '/sbin'
-      ];
-      const existingPath = process.env.PATH || '';
-      const pathArray = existingPath ? existingPath.split(':') : [];
-      // 合并并去重
-      const mergedPaths = [...new Set([...defaultPaths, ...pathArray])];
-
-      const env = {
-        ...process.env,
-        PATH: mergedPaths.join(':')
-      };
+      const env = getCommandEnv();
 
       // 使用 brew info 检查（带超时保护）
       try {
@@ -267,37 +250,8 @@ export async function checkDependencies(): Promise<Dependencies> {
       result.ntfs3g = false;
     }
 
-    // 检查 fswatch（可选，用于事件驱动检测）
-    if (result.brew) {
-      try {
-        // 确保 PATH 包含 Homebrew 路径（合并现有 PATH 和默认路径）
-        const defaultPaths = [
-          '/usr/local/bin',
-          '/opt/homebrew/bin',
-          '/usr/bin',
-          '/bin',
-          '/usr/sbin',
-          '/sbin'
-        ];
-        const existingPath = process.env.PATH || '';
-        const pathArray = existingPath ? existingPath.split(':') : [];
-        // 合并并去重
-        const mergedPaths = [...new Set([...defaultPaths, ...pathArray])];
-
-        const env = {
-          ...process.env,
-          PATH: mergedPaths.join(':')
-        };
-
-        const fswatchResult = await Promise.race([
-          execAsync('which fswatch 2>/dev/null', { env }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-        ]);
-        result.fswatch = (fswatchResult as { stdout: string }).stdout.trim().length > 0;
-      } catch {
-        result.fswatch = false;
-      }
-    }
+    // 检查 fswatch（可选；是否安装不依赖 brew 命令本身）
+    result.fswatch = await commandExists('fswatch');
   } catch (error) {
     console.error('检查依赖时出错:', error);
   }
@@ -339,26 +293,20 @@ export async function installDependencies(): Promise<string> {
   if (await commandExists('brew')) {
     logs.push('正在安装 MacFUSE 和 ntfs-3g...');
     try {
-      // 确保 PATH 包含 Homebrew 路径（合并现有 PATH 和默认路径）
-      const defaultPaths = [
-        '/usr/local/bin',
-        '/opt/homebrew/bin',
-        '/usr/bin',
-        '/bin',
-        '/usr/sbin',
-        '/sbin'
-      ];
-      const existingPath = process.env.PATH || '';
-      const pathArray = existingPath ? existingPath.split(':') : [];
-      // 合并并去重
-      const mergedPaths = [...new Set([...defaultPaths, ...pathArray])];
-
-      const env = {
-        ...process.env,
-        PATH: mergedPaths.join(':')
-      };
+      const env = getCommandEnv();
       await execAsync('brew tap gromgit/homebrew-fuse', { env });
-      await execAsync('brew install --cask macfuse', { env });
+      let macfuseInstalled = false;
+      try {
+        await execAsync('brew list --cask macfuse', { env });
+        macfuseInstalled = true;
+      } catch {
+        // Install the cask when it is not already registered with Homebrew.
+      }
+      if (macfuseInstalled) {
+        await execAsync('brew upgrade --cask --greedy macfuse', { env });
+      } else {
+        await execAsync('brew install --cask macfuse', { env });
+      }
       await execAsync('brew install ntfs-3g-mac', { env });
       logs.push('MacFUSE 和 ntfs-3g 安装完成');
     } catch (error) {
